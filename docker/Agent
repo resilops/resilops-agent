@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV POETRY_VERSION=2.2.1
+ENV HOME /home
+ENV APP $HOME
+
+ADD ./src ./pyproject.toml ./poetry.lock ./README.md $APP
+
+WORKDIR $APP
+
+RUN pip install "poetry==${POETRY_VERSION}"
+RUN poetry install

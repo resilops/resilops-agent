@@ -1,0 +1,74 @@
+syntax: glob
+# generic
+*.pyc
+*.swp
+*.swo
+.DS_Store
+*.egg-info/
+sandbox/*
+dist
+
+# pylons
+development.ini*
+sstore/*
+data/*
+pylons_data/*
+#ckan/i18n/*/*/*.mo
+
+# other
+pip-requirements-local.txt
+migrate/*
+build/*
+tmp/*
+solr_runtime/*
+fl_notes.txt
+!ckan/migration/alembic.ini
+.noseids
+*~
+.idea
+.vscode
+
+# custom style
+ckan/public/base/less/custom.less
+
+# nosetest coverage output
+.coverage
+htmlcov/*
+
+# Bot
+/logs
+/app_env
+test.ini
+
+# node.js
+node_modules/
+
+# docker
+contrib/docker/.env
+
+media
+dump.rdb
+.env
+env
+pvenv
+pyenv
+node_modules
+uploads
+
+# Local .terraform directories
+**/.terraform/*
+
+# Ignore variables files
+*.auto.tfvars
+
+# Ignore override files
+*.tfoverride
+
+# Ignore environment-specific files
+.envrc
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+secrets.yaml
+gpg_private.key
