@@ -46,6 +46,8 @@ class FaultPlanExecutionHandler:
                 if failed and plan.execution.stop_on_failure:
                     break
             except Exception as e:
+                # In case of API fault even after retry, we do not want to proceed
+                # further, which can be potentially harmful.
                 logger.exception(
                     "Unhandled error while executing fault plan %s", plan.id
                 )

@@ -3,15 +3,7 @@ import logging.config
 import os
 from typing import Any, Dict
 
-from pythonjsonlogger import jsonlogger
-
-
-class JsonFormatterLogging(jsonlogger.JsonFormatter):
-    """Add any additional record here."""
-
-    def add_fields(self, log_record, record, message_dict):
-        # Add default logging fields
-        super().add_fields(log_record, record, message_dict)
+import pythonjsonlogger
 
 
 def setup_logging() -> None:
@@ -28,7 +20,7 @@ def setup_logging() -> None:
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "json": {
-                "()": JsonFormatterLogging,
+                "()": pythonjsonlogger.json.JsonFormatter,
                 "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
                 "rename_fields": {"asctime": "time", "levelname": "level"},
                 "json_indent": None,
