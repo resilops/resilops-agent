@@ -2,15 +2,18 @@ import asyncio
 import logging
 from typing import Any, Dict, Optional
 
-from agent.models.agent import AgentStateModel
+from agent.handlers.event import EventHandler
+from agent.handlers.fault import FaultPlanExecutionHandler
+from agent.handlers.state import StateHandler
 from agent.models.config import AgentConfigModel
-from agent.models.fault import FaultPlanResponseModel
+from agent.models.event import AgentEventEnum
+from agent.models.fault import FaultPlanModel
 from agent.workers.base import PeriodicWorker
 
 logger = logging.getLogger(__name__)
 
 
-class PlanExecutorWorker(PeriodicWorker):
+class FaultPlanExecutorWorker(PeriodicWorker):
     """
     Periodic worker that executes queued fault plans.
 
@@ -24,7 +27,9 @@ class PlanExecutorWorker(PeriodicWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        agent: AgentStateModel,
+        state: StateHandler,
+        event: EventHandler,
+        executor: FaultPlanExecutionHandler,
         shutdown_event: asyncio.Event,
     ):
         """
@@ -32,10 +37,13 @@ class PlanExecutorWorker(PeriodicWorker):
 
         Args:
             config: Agent configuration containing the executor interval.
-            agent: Agent model containing the execution queue.
+            state: Internal state handler.
+            event: Event handler.
+            executor: Fault plan execution handler.
             shutdown_event: Async event used to gracefully stop the worker loop.
         """
-        super().__init__(config, agent, shutdown_event)
+        super().__init__(config, state, event, shutdown_event)
+        self.executor = executor
 
     @property
     def execution_interval(self) -> int:
@@ -54,7 +62,7 @@ class PlanExecutorWorker(PeriodicWorker):
         Returns:
             bool: True if the worker can run, False if it should be skipped.
         """
-        return self.agent.healthy and self.agent.runner.queued
+        return self.state.agent.is_healthy and self.state.executor.is_queued
 
     async def execute_iteration(self) -> Optional[Dict[str, Any]]:
         """
@@ -64,8 +72,13 @@ class PlanExecutorWorker(PeriodicWorker):
             A context dictionary containing:
                 - 'plan': The executed plan object, or None if no plan was queued.
         """
-        plan: FaultPlanResponseModel = self.agent.runner.plan
-        await plan.execute()
+        plan: FaultPlanModel = self.state.executor.current_plan
+        self.state.executor.mark_executing()
+        self.event.push(
+            AgentEventEnum.PLAN_EXECUTING,
+            {"plan_id": plan.id, "run_id": plan.run_id, "details": "Plan executing"},
+        )
+        await self.executor.run_plan(plan)
         return {"plan": plan}
 
     async def on_execution_success(self, context: Dict[str, Any]) -> None:
@@ -78,9 +91,16 @@ class PlanExecutorWorker(PeriodicWorker):
             context: Context dictionary returned by `execute_iteration`,
                      may contain 'plan'.
         """
-        plan: FaultPlanResponseModel = context.get("plan")
-        logger.info("Fault plan with id: %s executed successfully.", plan.id)
-        self.agent.runner.reset()
+        plan: FaultPlanModel = context.get("plan")
+        self.state.executor.reset()
+        self.event.push(
+            AgentEventEnum.PLAN_EXECUTION_SUCCESS,
+            {
+                "plan_id": plan.id,
+                "run_id": plan.run_id,
+                "details": "Plan executed successfully.",
+            },
+        )
 
     async def on_execution_error(
         self, context: Dict[str, Any], error: Exception
@@ -95,5 +115,29 @@ class PlanExecutorWorker(PeriodicWorker):
                      may contain 'plan'.
             error: Exception raised during plan execution.
         """
-        logger.info("Fault plan execution failed", exc_info=error)
-        self.agent.runner.reset()
+        # Any error raised should have the context with plan and failures
+        plan, failures = context.get("plan"), context.get("failures")
+        self.state.executor.reset()
+
+        for failure in failures:
+            self.event.push(
+                AgentEventEnum.FAULT_EXECUTION_ERROR,
+                {
+                    "plan_id": plan.id,
+                    "run_id": plan.run_id,
+                    "fault_id": failure.get("fault_id"),
+                    "details": failure.get("message"),
+                },
+            )
+
+        self.event.push(
+            AgentEventEnum.PLAN_EXECUTION_FAILED,
+            {
+                "plan_id": plan.id,
+                "run_id": plan.run_id,
+                "details": (
+                    f"Fault execution or API failed. "
+                    f"See '{AgentEventEnum.FAULT_EXECUTION_ERROR.value}' event."
+                ),
+            },
+        )

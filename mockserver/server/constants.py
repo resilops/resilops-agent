@@ -11,15 +11,51 @@ FAULT_PLAN = {
     "title": "Fault Plan 1",
     "available": True,
     "execution": {
-        "mode": "series",  # "series" or "parallel"
+        "mode": "series",  # Supports only "series" for now
         "stop_on_failure": True,  # stop executing further faults if one fails
     },
-    "faults": [
+    "faults": [1, 2, 3],
+}
+
+FAULT_EXAMPLE = {
+    "title": "Do we remain available in face of pod going down?",
+    "description": (
+        "We expect Kubernetes to handle the situation gracefully when a pod goes down"
+    ),
+    "tags": ["kubernetes"],
+    "steady-state-hypothesis": {
+        "title": "Verifying service remains healthy",
+        "probes": [
+            {
+                "name": "all-our-microservices-should-be-healthy",
+                "type": "probe",
+                "tolerance": True,
+                "secrets": ["k8s"],
+                "provider": {
+                    "type": "python",
+                    "module": "chaosk8s.probes",
+                    "func": "microservice_available_and_healthy",
+                    "arguments": {"name": "myapp"},
+                },
+            }
+        ],
+    },
+    "method": [
         {
-            "id": 123,
-            "type": "pod:kill",
-            "context": {"namespace": "default", "pod_name": "nginx-123"},
-        },
-        {"id": 124, "type": "node:drain", "context": {"node_name": "worker-1"}},
+            "type": "action",
+            "name": "terminate-db-pod",
+            "secrets": ["k8s"],
+            "provider": {
+                "type": "python",
+                "module": "chaosk8s.pod.actions",
+                "func": "terminate_pods",
+                "arguments": {
+                    "label_selector": "app=my-app",
+                    "name_pattern": "my-app-[0-9]$",
+                    "rand": True,
+                },
+            },
+            "pauses": {"after": 5},
+        }
     ],
 }

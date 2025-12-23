@@ -14,7 +14,7 @@ async def agent_heartbeat():
 
 
 @app.get("/api/v1/agent/plan")
-async def fetch_plan():
+async def agent_fetch_plan():
     """Simulate fetching a new fault plan."""
     await h.maybe_delay()
     failure = await h.maybe_fail()
@@ -23,21 +23,18 @@ async def fetch_plan():
 
 
 @app.post("/api/v1/agent/plan/ack")
-async def acknowledge_plan(request: Request):
+async def agent_acknowledge_plan(request: Request):
     """Simulate acknowledging a fault plan."""
     await h.maybe_delay()
     failure = await h.maybe_fail()
     return failure or JSONResponse({"status": "ok"})
 
 
-@app.post("/api/v1/agent/events")
-async def agent_event(request: Request):
-    """Simulate agent sending events."""
+@app.get("/api/v1/agent/fault/{fault_id}")
+async def agent_fetch_fault(fault_id: int):
+    """Simulate fetching a new fault."""
     await h.maybe_delay()
     failure = await h.maybe_fail()
-    if failure:
-        return failure
-
-    body = await request.body()
-    data = await request.json() if body else {}
-    return JSONResponse({"received": data})
+    fault = h.get_fault()
+    fault["id"] = fault_id
+    return failure or JSONResponse(fault)

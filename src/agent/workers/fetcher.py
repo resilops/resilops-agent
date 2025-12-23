@@ -3,15 +3,17 @@ import logging
 from typing import Any, Dict, Optional
 
 from agent.clients.control_plane import ControlPlaneClient
-from agent.models.agent import AgentStateModel
+from agent.handlers.event import EventHandler
+from agent.handlers.state import StateHandler
 from agent.models.config import AgentConfigModel
-from agent.models.fault import FaultPlanResponseModel
+from agent.models.event import AgentEventEnum
+from agent.models.fault import FaultPlanModel
 from agent.workers.base import PeriodicWorker
 
 logger = logging.getLogger(__name__)
 
 
-class PlanFetcherWorker(PeriodicWorker):
+class FaultPlanFetcherWorker(PeriodicWorker):
     """
     Periodic worker that polls the control plane for new fault plans.
 
@@ -24,7 +26,8 @@ class PlanFetcherWorker(PeriodicWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        agent: AgentStateModel,
+        state: StateHandler,
+        event: EventHandler,
         shutdown_event: asyncio.Event,
         client: ControlPlaneClient,
     ):
@@ -33,11 +36,12 @@ class PlanFetcherWorker(PeriodicWorker):
 
         Args:
             config: Agent configuration containing polling interval.
-            agent: Agent model used to access the execution queue.
+            state: Internal state handler.
+            event: Event handler.
             shutdown_event: Async event used to gracefully stop the worker loop.
             client: API client used to fetch and acknowledge fault plans.
         """
-        super().__init__(config, agent, shutdown_event)
+        super().__init__(config, state, event, shutdown_event)
         self.client = client
 
     @property
@@ -57,9 +61,9 @@ class PlanFetcherWorker(PeriodicWorker):
         Returns:
             bool: True if the worker can run, False if it should be skipped.
         """
-        return self.agent.healthy and self.agent.runner.available
+        return self.state.agent.is_healthy and self.state.executor.is_available
 
-    async def execute_iteration(self) -> Optional[Dict[str, FaultPlanResponseModel]]:
+    async def execute_iteration(self) -> Optional[Dict[str, FaultPlanModel]]:
         """
         Execute a single polling iteration.
         Fetches a fault plan from the control plane and acknowledges it.
@@ -69,7 +73,7 @@ class PlanFetcherWorker(PeriodicWorker):
             A dictionary containing the fetched plan, or None if no plan is available.
         """
         # Fetch new plan and acknowledge
-        plan: FaultPlanResponseModel = await self.client.fetch_plan()
+        plan: FaultPlanModel = await self.client.fetch_plan()
 
         # Acknowledge plan if available
         if plan.available:
@@ -86,12 +90,17 @@ class PlanFetcherWorker(PeriodicWorker):
             context: Context dictionary returned by `execute_iteration`,
                      containing the plan.
         """
-        plan: FaultPlanResponseModel = context.get("plan")
-        if not plan.available:
+        plan: FaultPlanModel = context.get("plan")
+
+        # If plan is not available skip enqueue
+        if not plan or not plan.available:
             return
 
-        logger.info("Enqueued new fault plan with id: %s", plan.id)
-        self.agent.runner.enqueue(plan)
+        self.state.executor.enqueue_plan(context.get("plan"))
+        self.event.push(
+            AgentEventEnum.PLAN_QUEUED,
+            {"plan_id": plan.id, "run_id": plan.run_id, "details": "Plan queued."},
+        )
 
     async def on_execution_error(
         self, context: Dict[str, Any], error: Exception
@@ -104,4 +113,5 @@ class PlanFetcherWorker(PeriodicWorker):
                      (maybe empty or partial).
             error: The exception raised during polling.
         """
+        # Note: Do not push event on error!!
         logger.error("Failed to fetch new fault plan", exc_info=error)

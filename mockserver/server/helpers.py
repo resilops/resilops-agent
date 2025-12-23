@@ -1,6 +1,6 @@
 import asyncio
 import random
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import status
 from fastapi.responses import JSONResponse
@@ -33,9 +33,15 @@ async def maybe_delay() -> None:
     await asyncio.sleep(random.uniform(0, constants.MAX_DELAY))
 
 
-def get_fault_plan():
+def get_fault_plan() -> Dict:
+    """Returns a respective fault plan"""
     return (
         constants.FAULT_PLAN
         if random.random() > constants.FAULT_PLAN_EMPTY_RATE
         else constants.FAULT_EMPTY_PLAN
     )
+
+
+def get_fault() -> Dict:
+    """Returns a respective fault"""
+    return constants.FAULT_EXAMPLE

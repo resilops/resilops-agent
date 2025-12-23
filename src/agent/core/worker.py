@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Iterable, List
 
-from agent.models.agent import AgentStateModel
+from agent.handlers.state import StateHandler
 from agent.workers.base import PeriodicWorker
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class WorkerManager:
 
     def __init__(
         self,
-        agent: AgentStateModel,
+        state: StateHandler,
         workers: Iterable[PeriodicWorker],
         shutdown_event: asyncio.Event,
     ):
@@ -28,11 +28,11 @@ class WorkerManager:
         Initialize the worker manager.
 
         Args:
-            agent: The agent's runtime state object.
+            state: Internal state handler
             workers: Iterable of periodic workers to manage.
             shutdown_event: Asyncio event used to signal shutdown.
         """
-        self.agent = agent
+        self.state = state
         self.workers: List[PeriodicWorker] = list(workers)
         self.shutdown_event = shutdown_event
 
@@ -42,14 +42,14 @@ class WorkerManager:
 
         Each worker is wrapped as an asyncio.Task so it can run concurrently.
         """
-        worker_tasks = [
+        workers = [
             asyncio.create_task(worker.run_continuously(), name=worker.WORKER_NAME)
             for worker in self.workers
         ]
-        self.agent.set_running_tasks(worker_tasks)
+        self.state.agent.register_workers(workers)
         logger.info(
             "Started %d background workers",
-            len(worker_tasks),
+            len(self.workers),
             extra={"workers": self.workers},
         )
 
@@ -62,12 +62,12 @@ class WorkerManager:
         logger.info("Initiating shutdown of background workers")
         self.shutdown_event.set()  # Signal all workers to stop
 
-        for worker_task in self.agent.running_tasks:
-            worker_task.cancel()  # Cancel each asyncio task
+        for worker in self.state.agent.current_workers:
+            worker.cancel()  # Cancel each asyncio task
 
         # Wait for all worker tasks to complete and collect exceptions
         results = await asyncio.gather(
-            *self.agent.running_tasks, return_exceptions=True
+            *self.state.agent.current_workers, return_exceptions=True
         )
 
         # Log exceptions, if any

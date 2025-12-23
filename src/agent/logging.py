@@ -17,7 +17,7 @@ class JsonFormatterLogging(jsonlogger.JsonFormatter):
 def setup_logging() -> None:
     """Configure logging using the provided dictionary or the default configuration."""
 
-    log_level = os.getenv("LOG_LEVEL", "DEBUG")
+    log_level = os.getenv("LOG_LEVEL", "INFO")
 
     logging_config: Dict[str, Any] = {
         "version": 1,
@@ -45,6 +45,11 @@ def setup_logging() -> None:
             "": {
                 "handlers": ["console"],
                 "level": log_level,
+                "propagate": False,
+            },
+            "chaostoolkit": {
+                "handlers": ["console"],
+                "level": "WARNING",  # Only warnings or errors from CT
                 "propagate": False,
             },
             "agent": {

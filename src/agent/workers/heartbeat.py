@@ -3,7 +3,8 @@ import logging
 from typing import Any, Dict, Optional
 
 from agent.clients.control_plane import ControlPlaneClient
-from agent.models.agent import AgentStateModel
+from agent.handlers.event import EventHandler
+from agent.handlers.state import StateHandler
 from agent.models.config import AgentConfigModel
 from agent.workers.base import PeriodicWorker
 
@@ -25,7 +26,8 @@ class HealthMonitorWorker(PeriodicWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        agent: AgentStateModel,
+        state: StateHandler,
+        event: EventHandler,
         shutdown_event: asyncio.Event,
         client: ControlPlaneClient,
     ):
@@ -34,11 +36,12 @@ class HealthMonitorWorker(PeriodicWorker):
 
         Args:
             config: Agent configuration containing health report interval settings.
-            agent: Agent model whose state is updated based on health report outcome.
+            state: Internal state handler.
+            event: Event handler.
             shutdown_event: Async event used to gracefully stop the worker loop.
             client: API client used to communicate with the control plane.
         """
-        super().__init__(config, agent, shutdown_event)
+        super().__init__(config, state, event, shutdown_event)
         self.client = client
 
     @property
@@ -71,7 +74,7 @@ class HealthMonitorWorker(PeriodicWorker):
         Args:
             context: Context returned by `execute_iteration` (unused).
         """
-        self.agent.healthy = True
+        self.state.agent.set_health(healthy=True)
 
     async def on_execution_error(
         self, context: Dict[str, Any], error: Exception
@@ -83,5 +86,5 @@ class HealthMonitorWorker(PeriodicWorker):
             context: Context returned by `execute_iteration` (unused).
             error: Exception raised during health report execution.
         """
-        logger.error("Health report request failed", exc_info=error)
-        self.agent.healthy = False
+        logger.error("Health report request failed: %s", exc_info=error)
+        self.state.agent.set_health(healthy=False)

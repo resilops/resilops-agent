@@ -2,7 +2,8 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
-from agent.models.agent import AgentStateModel
+from agent.handlers.event import EventHandler
+from agent.handlers.state import StateHandler
 from agent.models.config import AgentConfigModel
 
 
@@ -48,11 +49,13 @@ class PeriodicWorker(BaseWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        agent: AgentStateModel,
+        state: StateHandler,
+        event: EventHandler,
         shutdown_event: asyncio.Event,
     ):
         self.config = config
-        self.agent = agent
+        self.state = state
+        self.event = event
         self.shutdown_event = shutdown_event
 
     async def _execute_safely(self) -> None:
