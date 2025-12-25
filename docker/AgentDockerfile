@@ -4,9 +4,10 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV POETRY_VERSION=2.2.1
 ENV HOME /home
-ENV APP $HOME
+ENV APP $HOME/src
 
-ADD ./src ./pyproject.toml ./poetry.lock ./README.md $APP
+COPY ./src $APP
+ADD ./pyproject.toml ./poetry.lock ./README.md $HOME
 
 WORKDIR $APP
 

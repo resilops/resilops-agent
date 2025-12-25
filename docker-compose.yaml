@@ -4,11 +4,11 @@ services:
   agent:
     build:
       context: .
-      dockerfile: docker/Agent
+      dockerfile: docker/AgentDockerfile
     restart: unless-stopped
     command: poetry run fault-agent
     volumes:
-      - ./src/agent:/home/agent
+      - ./src/agent:/home/src/agent
     environment:
       - RESILTY_FAULT_AGENT_API_KEY_ID=test
       - RESILTY_FAULT_AGENT_API_SECRET_KEY=test
@@ -17,7 +17,7 @@ services:
   controlplane:
     build:
       context: .
-      dockerfile: docker/Mockserver
+      dockerfile: docker/MockserverDockerfile
     restart: unless-stopped
     ports:
       - "8000:8000"

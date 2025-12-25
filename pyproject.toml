@@ -9,7 +9,7 @@ description = "resilty.io agent for validating Kubernetes resiliency through con
 authors = ["Swaroop Shubhakrishna Bhat <swaroopbhatk@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
-packages = [{ include = "agent", from = "." }]
+packages = [{ include = "agent", from = "src" }]
 keywords = [
     "resilience",
     "resiliency",
