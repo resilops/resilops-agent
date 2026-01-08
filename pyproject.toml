@@ -3,9 +3,9 @@ requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "fault-agent"
-version = "0.1.0"
-description = "resilty.io agent for validating Kubernetes resiliency through controlled fault injection."
+name = "resilience-agent"
+version = "1.0.0"
+description = "resilty.io agent for validating Kubernetes resiliency and SLA criteria."
 authors = ["Swaroop Shubhakrishna Bhat <swaroopbhatk@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
@@ -76,6 +76,6 @@ show_missing = true
 skip_covered = true
 
 [tool.poetry.urls]
-homepage = "https://github.com/resiltyio/fault-agent"
-documentation = "https://github.com/resiltyio/fault-agent/tree/main/docs"
-bug-tracker = "https://github.com/resiltyio/fault-agent/issues"
+homepage = "https://github.com/resiltyio/resilience-agent"
+documentation = "https://github.com/resiltyio/resilience-agent/tree/main/docs"
+bug-tracker = "https://github.com/resiltyio/resilience-agent/issues"
