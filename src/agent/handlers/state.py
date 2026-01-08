@@ -96,13 +96,9 @@ class StateHandler:
     def __init__(
         self,
         agent_state_handler_cls: Type[AgentStateHandler] = AgentStateHandler,
-        executor_state_handler_cls: Type[ExecutorStateHandler] = (
-            ExecutorStateHandler
-        ),
+        executor_state_handler_cls: Type[ExecutorStateHandler] = (ExecutorStateHandler),
     ):
         self._state = AgentStateModel()
 
         self.agent = agent_state_handler_cls(agent=self._state)
-        self.executor = executor_state_handler_cls(
-            executor=self._state.executor
-        )
+        self.executor = executor_state_handler_cls(executor=self._state.executor)

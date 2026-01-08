@@ -2,8 +2,8 @@ import logging
 from typing import Dict
 
 from agent.clients.base import BaseAPIClient
-from agent.schemas.resiliency import ExperimentStepModel, ResiliencyPlanModel
 from agent.schemas.heartbeat import HeartbeatResponseModel
+from agent.schemas.resiliency import ExperimentStepModel, ResiliencyPlanModel
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +58,7 @@ class ControlPlaneClient(BaseAPIClient):
         await self.request("POST", "/api/v1/agent/plan/ack", json={"id": plan_id})
         return
 
-    async def fetch_plan_step(
-        self, plan_id: int, step_id: int
-    ) -> ExperimentStepModel:
+    async def fetch_plan_step(self, plan_id: int, step_id: int) -> ExperimentStepModel:
         """
         Fetch the resiliency plan step information given id.
 
