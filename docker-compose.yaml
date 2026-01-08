@@ -6,12 +6,12 @@ services:
       context: .
       dockerfile: docker/AgentDockerfile
     restart: unless-stopped
-    command: poetry run fault-agent
+    command: poetry run resilience-agent
     volumes:
       - ./src/agent:/home/src/agent
     environment:
-      - RESILTY_FAULT_AGENT_API_KEY_ID=test
-      - RESILTY_FAULT_AGENT_API_SECRET_KEY=test
+      - RESILTY_RESILIENCE_AGENT_API_KEY_ID=test
+      - RESILTY_RESILIENCE_AGENT_API_SECRET_KEY=test
     depends_on:
       - controlplane
   controlplane:

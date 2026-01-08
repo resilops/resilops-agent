@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class LifecycleManager:
     """
-    Coordinates the lifecycle of a Fault agent.
+    Coordinates the lifecycle of a resiliency-agent.
 
     Responsibilities:
     - Register OS signal handlers for graceful shutdown
@@ -67,7 +67,7 @@ class LifecycleManager:
         """
         self.register_signal_handlers()
         self.worker_manager.start_all_workers()
-        logger.info("Fault agent started and running")
+        logger.info("Resiliency agent started and running")
 
         try:
             await self.shutdown_event.wait()
@@ -84,6 +84,6 @@ class LifecycleManager:
         - Waits for worker completion and logs any exceptions
         - Logs completion of shutdown
         """
-        logger.info("Fault agent initiating shutdown")
+        logger.info("Resiliency agent initiating shutdown")
         await self.worker_manager.shutdown_all_workers()
         logger.info("Shutdown complete")

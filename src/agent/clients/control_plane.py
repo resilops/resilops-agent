@@ -2,20 +2,20 @@ import logging
 from typing import Dict
 
 from agent.clients.base import BaseAPIClient
-from agent.models.fault import FaultModel, FaultPlanModel
-from agent.models.heartbeat import HeartbeatResponseModel
+from agent.schemas.resiliency import ExperimentStepModel, ResiliencyPlanModel
+from agent.schemas.heartbeat import HeartbeatResponseModel
 
 logger = logging.getLogger(__name__)
 
 
 class ControlPlaneClient(BaseAPIClient):
     """
-    Async client for interacting with the Fault Control Plane API.
+    Async client for interacting with the Control Plane API.
 
     Provides methods for:
     - Registering the agent
     - Sending periodic heartbeat signals
-    - Fetching fault plans
+    - Fetching resiliency plans
     - Acknowledging executed plans
     """
 
@@ -40,30 +40,35 @@ class ControlPlaneClient(BaseAPIClient):
         response: Dict = await self.request("GET", "/api/v1/agent/heartbeat")
         return HeartbeatResponseModel(**response)
 
-    async def fetch_plan(self) -> FaultPlanModel:
+    async def fetch_plan(self) -> ResiliencyPlanModel:
         """
-        Fetch the next fault plan from the control plane.
+        Fetch the next resiliency plan from the control plane.
 
         Returns:
-            FaultPlanModel: Fault plan details, or an empty plan if none available.
+            ResiliencyPlanModel: Resiliency plan details, or an empty plan if
+            none available.
         """
-        logger.debug("Fetching fault plan from control plane")
+        logger.debug("Fetching resiliency plan from control plane")
         response: Dict = await self.request("GET", "/api/v1/agent/plan")
-        return FaultPlanModel(**response)
+        return ResiliencyPlanModel(**response)
 
     async def ack_plan(self, plan_id: int) -> None:
-        """Acknowledge that a fault plan has been received."""
+        """Acknowledge that a resiliency plan has been received."""
         logger.info("Acknowledging plan with ID: %d", plan_id)
         await self.request("POST", "/api/v1/agent/plan/ack", json={"id": plan_id})
         return
 
-    async def fetch_fault(self, fault_id: int) -> FaultModel:
+    async def fetch_plan_step(
+        self, plan_id: int, step_id: int
+    ) -> ExperimentStepModel:
         """
-        Fetch the fault information given id.
+        Fetch the resiliency plan step information given id.
 
         Returns:
-            FaultModel: Returns fault information as FaultModel.
+            ExperimentStepModel: Returns step information as ExperimentStepModel.
         """
-        logger.debug("Fetching fault from control plane")
-        response: Dict = await self.request("GET", f"/api/v1/agent/fault/{fault_id}")
-        return FaultModel(**response)
+        logger.debug("Fetching resiliency plan from control plane")
+        response: Dict = await self.request(
+            "GET", f"/api/v1/agent/plan/{plan_id}/step/{step_id}"
+        )
+        return ExperimentStepModel(**response)

@@ -1,51 +1,51 @@
 import asyncio
 from typing import List, Optional, Type
 
-from agent.models.fault import FaultPlanModel
-from agent.models.state import (
+from agent.schemas.resiliency import ResiliencyPlanModel
+from agent.schemas.state import (
     AgentStateEnum,
     AgentStateModel,
-    FaultPlanExecutionStateEnum,
-    FaultPlanExecutionStateModel,
+    ResiliencyPlanExecutionStateEnum,
+    ResiliencyPlanExecutionStateModel,
 )
 
 
-class FaultPlanExecutionHandler:
-    """Handles state transitions for a fault plan execution."""
+class ExecutorStateHandler:
+    """Handles state transitions for a resiliency plan execution."""
 
-    def __init__(self, executor: FaultPlanExecutionStateModel):
+    def __init__(self, executor: ResiliencyPlanExecutionStateModel):
         self._executor = executor
 
     @property
-    def current_plan(self) -> Optional[FaultPlanModel]:
-        """Return the currently assigned fault plan, if any."""
+    def current_plan(self) -> Optional[ResiliencyPlanModel]:
+        """Return the currently assigned resiliency plan, if any."""
         return self._executor.plan
 
     @property
     def is_available(self) -> bool:
         """Return True if the plan execution slot is available for a new plan."""
-        return self._executor.state == FaultPlanExecutionStateEnum.AVAILABLE
+        return self._executor.state == ResiliencyPlanExecutionStateEnum.AVAILABLE
 
     @property
     def is_queued(self) -> bool:
-        """Return True if a fault plan is queued for execution."""
-        return self._executor.state == FaultPlanExecutionStateEnum.QUEUED
+        """Return True if a resiliency plan is queued for execution."""
+        return self._executor.state == ResiliencyPlanExecutionStateEnum.QUEUED
 
     def reset(self) -> None:
         """Clear the queued plan and mark the execution slot as available."""
         self._executor.plan = None
-        self._executor.state = FaultPlanExecutionStateEnum.AVAILABLE
+        self._executor.state = ResiliencyPlanExecutionStateEnum.AVAILABLE
 
     def mark_executing(self) -> None:
         """Mark the plan execution as currently executing."""
-        self._executor.state = FaultPlanExecutionStateEnum.EXECUTING
+        self._executor.state = ResiliencyPlanExecutionStateEnum.EXECUTING
 
-    def enqueue_plan(self, plan: FaultPlanModel) -> bool:
+    def enqueue_plan(self, plan: ResiliencyPlanModel) -> bool:
         """
-        Queue a fault plan for execution if the execution slot is available.
+        Queue a resiliency plan for execution if the execution slot is available.
 
         Args:
-            plan: Fault plan to queue.
+            plan: Resiliency plan to queue.
 
         Returns:
             True if the plan was successfully queued, False otherwise.
@@ -54,7 +54,7 @@ class FaultPlanExecutionHandler:
             raise RuntimeError("Runner is busy, cannot queue at the moment.")
 
         self._executor.plan = plan
-        self._executor.state = FaultPlanExecutionStateEnum.QUEUED
+        self._executor.state = ResiliencyPlanExecutionStateEnum.QUEUED
         return True
 
 
@@ -95,12 +95,14 @@ class StateHandler:
 
     def __init__(
         self,
-        agent_handler_cls: Type[AgentStateHandler] = AgentStateHandler,
-        plan_execution_handler_cls: Type[FaultPlanExecutionHandler] = (
-            FaultPlanExecutionHandler
+        agent_state_handler_cls: Type[AgentStateHandler] = AgentStateHandler,
+        executor_state_handler_cls: Type[ExecutorStateHandler] = (
+            ExecutorStateHandler
         ),
     ):
         self._state = AgentStateModel()
 
-        self.agent = agent_handler_cls(agent=self._state)
-        self.executor = plan_execution_handler_cls(executor=self._state.executor)
+        self.agent = agent_state_handler_cls(agent=self._state)
+        self.executor = executor_state_handler_cls(
+            executor=self._state.executor
+        )

@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from agent.handlers.event import EventHandler
 from agent.handlers.state import StateHandler
-from agent.models.config import AgentConfigModel
+from agent.schemas.config import AgentConfigModel
 
 
 class BaseWorker(ABC):

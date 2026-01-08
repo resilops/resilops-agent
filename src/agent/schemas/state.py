@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from agent.models.fault import FaultPlanModel
+from agent.schemas.resiliency import ResiliencyPlanModel
 
 
 class AgentStateEnum(str, Enum):
@@ -15,23 +15,23 @@ class AgentStateEnum(str, Enum):
     UNKNOWN = "unknown"
 
 
-class FaultPlanExecutionStateEnum(str, Enum):
-    """Represents the execution state of the fault plan runner."""
+class ResiliencyPlanExecutionStateEnum(str, Enum):
+    """Represents the execution state of the resiliency plan runner."""
 
     EXECUTING = "executing"
     QUEUED = "queued"
     AVAILABLE = "available"
 
 
-class FaultPlanExecutionStateModel(BaseModel):
+class ResiliencyPlanExecutionStateModel(BaseModel):
     """
-    In-memory state of the fault plan runner.
+    In-memory state of the resiliency plan runner.
 
-    Tracks the currently assigned fault plan and its execution state.
+    Tracks the currently assigned plan step and its execution state.
     """
 
-    plan: Optional[FaultPlanModel] = None
-    state: FaultPlanExecutionStateEnum = FaultPlanExecutionStateEnum.AVAILABLE
+    plan: Optional[ResiliencyPlanModel] = None
+    state: ResiliencyPlanExecutionStateEnum = ResiliencyPlanExecutionStateEnum.AVAILABLE
 
 
 class AgentStateModel(BaseModel):
@@ -45,7 +45,7 @@ class AgentStateModel(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     status: AgentStateEnum = AgentStateEnum.UNKNOWN
-    executor: FaultPlanExecutionStateModel = Field(
-        default_factory=FaultPlanExecutionStateModel
+    executor: ResiliencyPlanExecutionStateModel = Field(
+        default_factory=ResiliencyPlanExecutionStateModel
     )
     running_workers: List[asyncio.Task] = Field(default_factory=list)

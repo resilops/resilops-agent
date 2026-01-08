@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
-class ExecutionModel(BaseModel):
-    """Execution configuration for a fault plan."""
+class ExecutionPolicyModel(BaseModel):
+    """Execution configuration for a resiliency plan."""
 
     mode: str = Field(..., description="Execution mode, e.g., 'series' or 'parallel'")
     stop_on_failure: bool = Field(
@@ -12,18 +12,18 @@ class ExecutionModel(BaseModel):
     )
 
 
-class FaultPlanModel(BaseModel):
-    """Represents a full fault plan returned by the control plane."""
+class ResiliencyPlanModel(BaseModel):
+    """Represents a full resiliency plan returned by the control plane."""
 
     id: Optional[int] = None
     run_id: Optional[int] = None
     title: str
     available: bool = False
-    execution: Optional[ExecutionModel] = None
-    faults: List[int] = Field(default_factory=list)
+    execution: Optional[ExecutionPolicyModel] = None
+    steps: List[int] = Field(default_factory=list)
 
 
-class FaultModel(BaseModel):
+class ExperimentStepModel(BaseModel):
 
     id: int
     title: str

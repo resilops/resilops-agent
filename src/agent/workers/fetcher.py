@@ -5,19 +5,19 @@ from typing import Any, Dict, Optional
 from agent.clients.control_plane import ControlPlaneClient
 from agent.handlers.event import EventHandler
 from agent.handlers.state import StateHandler
-from agent.models.config import AgentConfigModel
-from agent.models.event import AgentEventEnum
-from agent.models.fault import FaultPlanModel
+from agent.schemas.config import AgentConfigModel
+from agent.schemas.event import AgentEventEnum
+from agent.schemas.resiliency import ResiliencyPlanModel
 from agent.workers.base import PeriodicWorker
 
 logger = logging.getLogger(__name__)
 
 
-class FaultPlanFetcherWorker(PeriodicWorker):
+class ResiliencyPlanFetcherWorker(PeriodicWorker):
     """
-    Periodic worker that polls the control plane for new fault plans.
+    Periodic worker that polls the control plane for new resiliency plans.
 
-    Fetches available fault plans and enqueues them for execution.
+    Fetches available resiliency plans and enqueues them for execution.
     Runs at a fixed interval defined in the agent configuration.
     """
 
@@ -32,14 +32,14 @@ class FaultPlanFetcherWorker(PeriodicWorker):
         client: ControlPlaneClient,
     ):
         """
-        Initialize the fault plan fetching worker.
+        Initialize the resiliency plan fetching worker.
 
         Args:
             config: Agent configuration containing polling interval.
             state: Internal state handler.
             event: Event handler.
             shutdown_event: Async event used to gracefully stop the worker loop.
-            client: API client used to fetch and acknowledge fault plans.
+            client: API client used to fetch and acknowledge resiliency plans.
         """
         super().__init__(config, state, event, shutdown_event)
         self.client = client
@@ -47,12 +47,12 @@ class FaultPlanFetcherWorker(PeriodicWorker):
     @property
     def execution_interval(self) -> int:
         """
-        Interval (in seconds) at which fault plans are polled.
+        Interval (in seconds) at which resiliency plans are polled.
 
         Returns:
             The polling interval defined in the agent configuration.
         """
-        return self.config.fault_plan_poll_interval
+        return self.config.resiliency_plan_poll_interval
 
     async def should_execute(self) -> bool:
         """
@@ -63,17 +63,17 @@ class FaultPlanFetcherWorker(PeriodicWorker):
         """
         return self.state.agent.is_healthy and self.state.executor.is_available
 
-    async def execute_iteration(self) -> Optional[Dict[str, FaultPlanModel]]:
+    async def execute_iteration(self) -> Optional[Dict[str, ResiliencyPlanModel]]:
         """
         Execute a single polling iteration.
-        Fetches a fault plan from the control plane and acknowledges it.
+        Fetches a resiliency plan from the control plane and acknowledges it.
         Returns a context dictionary containing the plan for the success hook.
 
         Returns:
             A dictionary containing the fetched plan, or None if no plan is available.
         """
         # Fetch new plan and acknowledge
-        plan: FaultPlanModel = await self.client.fetch_plan()
+        plan: ResiliencyPlanModel = await self.client.fetch_plan()
 
         # Acknowledge plan if available
         if plan.available:
@@ -84,13 +84,14 @@ class FaultPlanFetcherWorker(PeriodicWorker):
     async def on_execution_success(self, context: Dict[str, Any]) -> None:
         """
         Handle a successful polling iteration.
-        Enqueues the fetched fault plan for execution and logs debug information.
+        Enqueues the fetched resiliency plan for execution and
+        logs debug information.
 
         Args:
             context: Context dictionary returned by `execute_iteration`,
                      containing the plan.
         """
-        plan: FaultPlanModel = context.get("plan")
+        plan: ResiliencyPlanModel = context.get("plan")
 
         # If plan is not available skip enqueue
         if not plan or not plan.available:
@@ -114,4 +115,4 @@ class FaultPlanFetcherWorker(PeriodicWorker):
             error: The exception raised during polling.
         """
         # Note: Do not push event on error!!
-        logger.error("Failed to fetch new fault plan", exc_info=error)
+        logger.error("Failed to fetch new resiliency plan", exc_info=error)

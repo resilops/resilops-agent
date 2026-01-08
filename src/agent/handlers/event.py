@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict
 
-from agent.models.event import AgentEventEnum
+from agent.schemas.event import AgentEventEnum
 
 logger = logging.getLogger(__name__)
 

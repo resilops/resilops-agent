@@ -9,4 +9,4 @@ class AgentEventEnum(str, Enum):
     PLAN_EXECUTION_SUCCESS = "plan:execution:success"
     PLAN_EXECUTION_FAILED = "plan:execution:failed"
 
-    FAULT_EXECUTION_ERROR = "fault:execution:error"
+    RESILIENCY_PLAN_EXECUTION_ERROR = "resiliency:plan:execution:error"

@@ -13,10 +13,9 @@ packages = [{ include = "agent", from = "src" }]
 keywords = [
     "resilience",
     "resiliency",
-    "chaos-engineering",
+    "resiliency-posture",
     "kubernetes",
     "sre",
-    "fault-injection",
     "reliability",
     "observability",
     "opentelemetry",
@@ -40,7 +39,7 @@ pytest = "^9.0.2"
 pytest-cov = "^7.0.0"
 
 [tool.poetry.scripts]
-fault-agent = "agent.entrypoint:run"
+resilience-agent = "agent.entrypoint:run"
 
 [tool.black]
 line-length = 88

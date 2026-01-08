@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from agent.clients.control_plane import ControlPlaneClient
 from agent.handlers.event import EventHandler
 from agent.handlers.state import StateHandler
-from agent.models.config import AgentConfigModel
+from agent.schemas.config import AgentConfigModel
 from agent.workers.base import PeriodicWorker
 
 logger = logging.getLogger(__name__)

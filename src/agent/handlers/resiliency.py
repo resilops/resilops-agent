@@ -3,39 +3,38 @@ import logging
 from chaoslib.experiment import run_experiment
 
 from agent.clients.control_plane import ControlPlaneClient
-from agent.exceptions import FaultPlanExecutionFailedException
-from agent.models.fault import FaultModel, FaultPlanModel
+from agent.exceptions import ResiliencyPlanExecutionError
+from agent.schemas.resiliency import ExperimentStepModel, ResiliencyPlanModel
 
 logger = logging.getLogger(__name__)
 
 
-class FaultPlanExecutionHandler:
+class ResiliencyPlanExecutionHandler:
     """
-    Executes a fault plan sequentially and emits execution events.
+    Executes a resiliency plan sequentially and emits execution events.
 
     Responsibilities:
-        - Fetch faults from control plane
-        - Execute chaos experiments (one-shot)
+        - Fetch steps from control plane
+        - Execute step (experiment) (one-shot)
         - Stop execution on failure if configured
     """
 
-    def __init__(
-        self,
-        client: ControlPlaneClient,
-    ) -> None:
+    def __init__(self, client: ControlPlaneClient) -> None:
         self.client = client
 
-    async def run_plan(self, plan: FaultPlanModel) -> None:
-        """Raises exception if any of the fault execution failed or some api error"""
+    async def run_plan(self, plan: ResiliencyPlanModel) -> None:
+        """Raises exception if any of the step execution failed or some api error"""
         failures: list[dict[str, str]] = []
-        for fault_id in plan.faults:
+        for step_id in plan.steps:
             try:
-                fault: FaultModel = await self.client.fetch_fault(fault_id)
+                step: ExperimentStepModel = await self.client.fetch_plan_step(
+                    plan_id=plan.id, step_id=step_id
+                )
 
-                result = run_experiment(fault.dict())
+                result = run_experiment(step.dict())
                 failed = [
                     {
-                        "fault_id": fault_id,
+                        "step_id": step_id,
                         "message": item.get("exception", ["Unknown error"])[-1],
                     }
                     for item in result.get("run", [])
@@ -49,13 +48,13 @@ class FaultPlanExecutionHandler:
                 # In case of API fault even after retry, we do not want to proceed
                 # further, which can be potentially harmful.
                 logger.exception(
-                    "Unhandled error while executing fault plan %s", plan.id
+                    "Unhandled error while executing resiliency plan %s", plan.id
                 )
-                failures.append({"fault_id": fault_id, "message": str(e)})
+                failures.append({"step_id": step_id, "message": str(e)})
                 break
 
         if failures:
-            raise FaultPlanExecutionFailedException(
-                "Fault plan execution failed",
+            raise ResiliencyPlanExecutionError(
+                "Resiliency plan execution failed",
                 context={"plan": plan, "failures": failures},
             )

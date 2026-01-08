@@ -6,7 +6,7 @@ import aiohttp
 
 from agent import helper as h
 from agent.exceptions import APIRequestError
-from agent.models.config import AgentConfigModel
+from agent.schemas.config import AgentConfigModel
 
 logger = logging.getLogger(__name__)
 

@@ -4,18 +4,18 @@ from agent.clients.control_plane import ControlPlaneClient
 from agent.core.lifecycle import LifecycleManager
 from agent.core.worker import WorkerManager
 from agent.handlers.event import EventHandler
-from agent.handlers.fault import FaultPlanExecutionHandler
+from agent.handlers.resiliency import ResiliencyPlanExecutionHandler
 from agent.handlers.state import StateHandler
 from agent.logging import setup_logging
-from agent.models.config import AgentConfigModel
-from agent.workers.executor import FaultPlanExecutorWorker
-from agent.workers.fetcher import FaultPlanFetcherWorker
+from agent.schemas.config import AgentConfigModel
+from agent.workers.executor import ResiliencyPlanExecutorWorker
+from agent.workers.fetcher import ResiliencyPlanFetcherWorker
 from agent.workers.heartbeat import HealthMonitorWorker
 
 
 async def main() -> None:
     """
-    Main entry point for the Fault agent.
+    Main entry point for the Resiliency agent.
     Sets up configuration, state, workers, and lifecycle manager, then runs.
     """
 
@@ -45,18 +45,18 @@ async def main() -> None:
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
-        FaultPlanFetcherWorker(
+        ResiliencyPlanFetcherWorker(
             config=config,
             state=state,
             event=event,
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
-        FaultPlanExecutorWorker(
+        ResiliencyPlanExecutorWorker(
             config=config,
             state=state,
             event=event,
-            executor=FaultPlanExecutionHandler(client=control_plane_client),
+            executor=ResiliencyPlanExecutionHandler(client=control_plane_client),
             shutdown_event=shutdown_event,
         ),
     )
