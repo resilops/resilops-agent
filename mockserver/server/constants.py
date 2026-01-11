@@ -25,14 +25,24 @@ EXPERIMENT_EXAMPLE = {
     "description": (
         "We expect Kubernetes to handle the situation gracefully when a pod goes down"
     ),
+    "guardrail": {
+        "name": "is_pod_termination_possible",
+        "kwargs": {"respect_pdb": True},
+    },
     "experiment": {
-        "name": "PodKillExperiment",
-        "args": {
+        "name": "terminate_pods",
+        "kwargs": {
             "namespace": "abc",
             "label": "myapp",
             "quantity": 25,
             "mode": "percentage",
         },
     },
-    "probe": {"name": "HttpReadinessProbe", "args": {"endpoint": "", "timeout": 3}},
+    "lifecycle": {
+        "pre_experiment_delay": 5,
+        "post_experiment_delay": 5,
+        "post_probe_delay": 10,
+    },
+    "probe": {"name": "http_readiness_probe", "kwargs": {"endpoint": "", "timeout": 3}},
+    "rollback": {"name": "rollback_pod_kill", "kwargs": {"cmd": "asd"}},
 }

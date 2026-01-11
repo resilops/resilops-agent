@@ -2,7 +2,7 @@ import asyncio
 import logging
 import signal
 
-from agent.core.worker import WorkerManager
+from agent.core.manager import WorkerManager
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ from typing import Dict
 
 from agent.clients.base import BaseAPIClient
 from agent.schemas.heartbeat import HeartbeatResponseModel
-from agent.schemas.resiliency import Experiment, ResiliencyPlan
+from agent.schemas.resiliency import ExperimentDefinition, ResiliencyPlan
 
 logger = logging.getLogger(__name__)
 
@@ -58,15 +58,15 @@ class ControlPlaneClient(BaseAPIClient):
         await self.request("POST", "/api/v1/agent/plan/ack", json={"id": plan_id})
         return
 
-    async def fetch_experiment(self, plan_id: int, exp_id: int) -> Experiment:
+    async def fetch_experiment(self, plan_id: int, exp_id: int) -> ExperimentDefinition:
         """
         Fetch the resiliency experiment information given id.
 
         Returns:
-            Experiment: Returns experiment instructions.
+            ExperimentDefinition: Returns experiment instructions.
         """
         logger.debug("Fetching resiliency experiment from control plane")
         response: Dict = await self.request(
             "GET", f"/api/v1/agent/plan/{plan_id}/experiment/{exp_id}"
         )
-        return Experiment(**response)
+        return ExperimentDefinition(**response)

@@ -3,10 +3,10 @@ import logging
 from typing import Any, Dict, Optional
 
 from agent.clients.control_plane import ControlPlaneClient
+from agent.core.worker import PeriodicWorker
 from agent.handlers.event import EventHandler
-from agent.handlers.state import StateHandler
+from agent.handlers.state import AgentStateHandler
 from agent.schemas.config import AgentConfigModel
-from agent.workers.base import PeriodicWorker
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class HealthMonitorWorker(PeriodicWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        state_handler: StateHandler,
+        state_handler: AgentStateHandler,
         event_handler: EventHandler,
         shutdown_event: asyncio.Event,
         client: ControlPlaneClient,

@@ -1,77 +1,64 @@
 import asyncio
-from typing import List, Optional, Type
+from typing import List, Optional
 
 from agent.schemas.resiliency import ResiliencyPlan
 from agent.schemas.state import (
-    AgentStateEnum,
-    AgentStateModel,
-    ResiliencyPlanExecutionStateEnum,
-    ResiliencyPlanExecutionStateModel,
+    AgentHealthStatusEnum,
+    AgentRuntimeState,
+    ResiliencyPlanLifecycleStateEnum,
+    ResiliencyPlanRuntimeState,
 )
 
 
-class ExecutorStateHandler:
-    """Handles state transitions for a resiliency plan execution."""
+class ResiliencyPlanRuntimeStateHandler:
+    """Manages lifecycle transitions for a resiliency plan execution."""
 
-    def __init__(self, executor: ResiliencyPlanExecutionStateModel):
-        self._executor = executor
+    def __init__(self, state: ResiliencyPlanRuntimeState):
+        self._state = state
 
     @property
     def current_plan(self) -> Optional[ResiliencyPlan]:
-        """Return the currently assigned resiliency plan, if any."""
-        return self._executor.plan
+        return self._state.plan
 
     @property
-    def is_available(self) -> bool:
-        """Return True if the plan execution slot is available for a new plan."""
-        return self._executor.state == ResiliencyPlanExecutionStateEnum.AVAILABLE
+    def is_idle(self) -> bool:
+        return self._state.state == ResiliencyPlanLifecycleStateEnum.IDLE
 
     @property
     def is_queued(self) -> bool:
-        """Return True if a resiliency plan is queued for execution."""
-        return self._executor.state == ResiliencyPlanExecutionStateEnum.QUEUED
+        return self._state.state == ResiliencyPlanLifecycleStateEnum.QUEUED
 
-    def reset(self) -> None:
-        """Clear the queued plan and mark the execution slot as available."""
-        self._executor.plan = None
-        self._executor.state = ResiliencyPlanExecutionStateEnum.AVAILABLE
+    def enqueue(self, plan: ResiliencyPlan) -> None:
+        if not self.is_idle:
+            raise RuntimeError("Plan execution slot is busy.")
 
-    def mark_executing(self) -> None:
-        """Mark the plan execution as currently executing."""
-        self._executor.state = ResiliencyPlanExecutionStateEnum.EXECUTING
+        self._state.plan = plan
+        self._state.state = ResiliencyPlanLifecycleStateEnum.QUEUED
 
-    def enqueue_plan(self, plan: ResiliencyPlan) -> bool:
-        """
-        Queue a resiliency plan for execution if the execution slot is available.
+    def mark_running(self) -> None:
+        if not self.is_queued:
+            raise RuntimeError("Cannot start execution: no plan queued.")
 
-        Args:
-            plan: Resiliency plan to queue.
+        self._state.state = ResiliencyPlanLifecycleStateEnum.RUNNING
 
-        Returns:
-            True if the plan was successfully queued, False otherwise.
-        """
-        if not self.is_available:
-            raise RuntimeError("Runner is busy, cannot queue at the moment.")
-
-        self._executor.plan = plan
-        self._executor.state = ResiliencyPlanExecutionStateEnum.QUEUED
-        return True
+    def mark_idle(self) -> None:
+        self._state.plan = None
+        self._state.state = ResiliencyPlanLifecycleStateEnum.IDLE
 
 
-class AgentStateHandler:
-    """Handles agent-level state updates triggered by worker outcomes."""
+class AgentRuntimeStateHandler:
+    """Manages agent-level runtime state."""
 
-    def __init__(self, agent: AgentStateModel):
+    def __init__(self, agent: AgentRuntimeState):
         self._agent = agent
 
     @property
     def is_healthy(self) -> bool:
-        """Return true if agent is healthy"""
-        return self._agent.status == AgentStateEnum.HEALTHY
+        return self._agent.health == AgentHealthStatusEnum.HEALTHY
 
     @property
     def current_workers(self) -> List[asyncio.Task]:
-        """Return the currently registered background worker tasks."""
+        """Return currently registered background worker tasks."""
         return self._agent.running_workers
 
     def register_workers(self, workers: List[asyncio.Task]) -> None:
@@ -79,26 +66,23 @@ class AgentStateHandler:
         self._agent.running_workers = workers
 
     def set_health(self, healthy: bool) -> None:
-        """Update the agent's health status."""
-        self._agent.status = (
-            AgentStateEnum.HEALTHY if healthy else AgentStateEnum.UNHEALTHY
+        """Update agent health status."""
+        self._agent.health = (
+            AgentHealthStatusEnum.HEALTHY
+            if healthy
+            else AgentHealthStatusEnum.UNHEALTHY
         )
 
 
-class StateHandler:
+class AgentStateHandler:
     """
     Facade for all agent state mutations.
 
-    Workers should interact ONLY with this handler, never directly
-    with the underlying state models.
+    Workers should interact ONLY with this handler.
     """
 
-    def __init__(
-        self,
-        agent_state_handler_cls: Type[AgentStateHandler] = AgentStateHandler,
-        executor_state_handler_cls: Type[ExecutorStateHandler] = ExecutorStateHandler,
-    ):
-        self._state = AgentStateModel()
+    def __init__(self) -> None:
+        state = AgentRuntimeState()
 
-        self.agent = agent_state_handler_cls(agent=self._state)
-        self.executor = executor_state_handler_cls(executor=self._state.executor)
+        self.agent = AgentRuntimeStateHandler(state)
+        self.runner = ResiliencyPlanRuntimeStateHandler(state.runner)

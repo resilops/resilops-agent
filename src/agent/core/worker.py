@@ -1,81 +1,79 @@
 import asyncio
-import logging
-from typing import Iterable, List
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
 
-from agent.handlers.state import StateHandler
-from agent.workers.base import PeriodicWorker
+from agent.handlers.event import EventHandler
+from agent.handlers.state import AgentStateHandler
+from agent.schemas.config import AgentConfigModel
 
-logger = logging.getLogger(__name__)
+
+class BaseWorker(ABC):
+    """Abstract base class for all background workers."""
+
+    @property
+    @abstractmethod
+    def execution_interval(self) -> int:
+        """Interval between worker executions in seconds."""
+
+    @abstractmethod
+    async def should_execute(self) -> bool:
+        """Check if worker should run in current state."""
+
+    @abstractmethod
+    async def execute_iteration(self) -> Optional[Dict[str, Any]]:
+        """
+        Execute one worker iteration.
+        Returns optional context data for hooks.
+        """
+
+    @abstractmethod
+    async def on_execution_success(self, context: Dict[str, Any]) -> None:
+        """Called after successful execution."""
+
+    @abstractmethod
+    async def on_execution_error(
+        self, context: Dict[str, Any], error: Exception
+    ) -> None:
+        """Called when execution fails."""
+
+    @abstractmethod
+    async def run_continuously(self) -> None:
+        """Run the worker's main loop until stopped."""
 
 
-class WorkerManager:
-    """
-    Manages the lifecycle of background workers for the agent.
+class PeriodicWorker(BaseWorker):
+    """Concrete implementation of a periodic background worker."""
 
-    Responsibilities:
-    - Start all workers and track them
-    - Gracefully stop/cancel workers on shutdown
-    - Integrate with the agent's runtime state
-    """
+    WORKER_NAME: str = "base_worker"
 
     def __init__(
         self,
-        state_handler: StateHandler,
-        workers: Iterable[PeriodicWorker],
+        config: AgentConfigModel,
+        state_handler: AgentStateHandler,
+        event_handler: EventHandler,
         shutdown_event: asyncio.Event,
     ):
-        """
-        Initialize the worker manager.
-
-        Args:
-            state_handler: Internal state handler
-            workers: Iterable of periodic workers to manage.
-            shutdown_event: Asyncio event used to signal shutdown.
-        """
+        self.config = config
         self.state_handler = state_handler
-        self.workers: List[PeriodicWorker] = list(workers)
+        self.event_handler = event_handler
         self.shutdown_event = shutdown_event
 
-    def start_all_workers(self) -> None:
-        """
-        Start all background workers concurrently and track them in the agent state.
+    async def _execute_safely(self) -> None:
+        """Execute one iteration with proper error handling."""
+        try:
+            context = await self.execute_iteration() or {}
+            await self.on_execution_success(context)
+        except Exception as error:
+            context = getattr(error, "context", {})
+            await self.on_execution_error(context, error)
 
-        Each worker is wrapped as an asyncio.Task so it can run concurrently.
-        """
-        workers = [
-            asyncio.create_task(worker.run_continuously(), name=worker.WORKER_NAME)
-            for worker in self.workers
-        ]
-        self.state_handler.agent.register_workers(workers)
-        logger.info(
-            "Started %d background workers",
-            len(self.workers),
-            extra={"workers": self.workers},
-        )
+    async def should_execute(self) -> bool:
+        """Default precondition: always execute unless overridden."""
+        return True
 
-    async def shutdown_all_workers(self) -> None:
-        """
-        Cancel all running workers and wait for their termination.
-
-        This ensures a graceful shutdown and prevents dangling workers.
-        """
-        logger.info("Initiating shutdown of background workers")
-        self.shutdown_event.set()  # Signal all workers to stop
-
-        for worker in self.state_handler.agent.current_workers:
-            worker.cancel()  # Cancel each asyncio task
-
-        # Wait for all worker tasks to complete and collect exceptions
-        results = await asyncio.gather(
-            *self.state_handler.agent.current_workers, return_exceptions=True
-        )
-
-        # Log exceptions, if any
-        for idx, result in enumerate(results):
-            if isinstance(result, Exception):
-                logger.exception(
-                    "Worker raised an exception during shutdown",
-                    extra={"id": id, "result": result},
-                )
-
-        logger.info("All background workers have been shut down")
+    async def run_continuously(self) -> None:
+        """Main execution loop for the periodic worker."""
+        while not self.shutdown_event.is_set():
+            await asyncio.sleep(self.execution_interval)
+            if await self.should_execute():
+                await self._execute_safely()

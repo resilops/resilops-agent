@@ -2,18 +2,18 @@ import asyncio
 import logging
 from typing import Any, Dict, Optional
 
+from agent.core.worker import PeriodicWorker
 from agent.handlers.event import EventHandler
-from agent.handlers.resiliency import ResiliencyPlanExecutionHandler
-from agent.handlers.state import StateHandler
+from agent.handlers.runner import ResiliencyPlanRunner
+from agent.handlers.state import AgentStateHandler
 from agent.schemas.config import AgentConfigModel
 from agent.schemas.event import AgentEventEnum
 from agent.schemas.resiliency import ResiliencyPlan
-from agent.workers.base import PeriodicWorker
 
 logger = logging.getLogger(__name__)
 
 
-class ResiliencyPlanExecutorWorker(PeriodicWorker):
+class ResiliencyPlanRunnerWorker(PeriodicWorker):
     """
     Periodic worker that executes queued resilience test plans.
 
@@ -27,9 +27,9 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        state_handler: StateHandler,
+        state_handler: AgentStateHandler,
         event_handler: EventHandler,
-        execution_handler: ResiliencyPlanExecutionHandler,
+        runner: ResiliencyPlanRunner,
         shutdown_event: asyncio.Event,
     ):
         """
@@ -39,11 +39,11 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
             config: Agent configuration containing the executor interval.
             state_handler: Internal state handler.
             event_handler: Event handler.
-            execution_handler: Resiliency plan execution handler.
+            runner: Resiliency plan runner.
             shutdown_event: Async event used to gracefully stop the worker loop.
         """
         super().__init__(config, state_handler, event_handler, shutdown_event)
-        self.execution_handler = execution_handler
+        self.runner = runner
 
     @property
     def execution_interval(self) -> int:
@@ -63,8 +63,7 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
             bool: True if the worker can run, False if it should be skipped.
         """
         return (
-            self.state_handler.agent.is_healthy
-            and self.state_handler.executor.is_queued
+            self.state_handler.agent.is_healthy and self.state_handler.runner.is_queued
         )
 
     async def execute_iteration(self) -> Optional[Dict[str, Any]]:
@@ -75,14 +74,14 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
             A context dictionary containing:
                 - 'plan': The executed plan object, or None if no plan was queued.
         """
-        plan: ResiliencyPlan = self.state_handler.executor.current_plan
-        self.state_handler.executor.mark_executing()
+        plan: ResiliencyPlan = self.state_handler.runner.current_plan
+        self.state_handler.runner.mark_running()
         self.event_handler.publish(
             plan=plan,
             name=AgentEventEnum.PLAN_EXECUTING,
             payload={"details": "Plan executing"},
         )
-        await self.execution_handler.run(plan)
+        await self.runner.run(plan)
         return {"plan": plan}
 
     async def on_execution_success(self, context: Dict[str, Any]) -> None:
@@ -96,7 +95,7 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
                      may contain 'plan'.
         """
         plan: ResiliencyPlan = context.get("plan")
-        self.state_handler.executor.reset()
+        self.state_handler.runner.mark_idle()
         self.event_handler.publish(
             plan=plan,
             name=AgentEventEnum.PLAN_EXECUTION_SUCCESS,
@@ -118,7 +117,7 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
         """
         # Any error raised should have the context with plan and message
         plan, err = context.get("plan"), context.get("message")
-        self.state_handler.executor.reset()
+        self.state_handler.runner.mark_idle()
 
         self.event_handler.publish(
             plan=plan,

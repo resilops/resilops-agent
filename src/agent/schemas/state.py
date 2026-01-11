@@ -7,45 +7,44 @@ from pydantic import BaseModel, ConfigDict, Field
 from agent.schemas.resiliency import ResiliencyPlan
 
 
-class AgentStateEnum(str, Enum):
-    """Represents the overall health state of the agent."""
+class AgentHealthStatusEnum(str, Enum):
+    """Represents the overall health of the agent."""
 
     HEALTHY = "healthy"
     UNHEALTHY = "unhealthy"
     UNKNOWN = "unknown"
 
 
-class ResiliencyPlanExecutionStateEnum(str, Enum):
+class ResiliencyPlanLifecycleStateEnum(str, Enum):
     """Represents the execution state of the resiliency plan runner."""
 
-    EXECUTING = "executing"
+    RUNNING = "running"
     QUEUED = "queued"
-    AVAILABLE = "available"
+    IDLE = "idle"
 
 
-class ResiliencyPlanExecutionStateModel(BaseModel):
+class ResiliencyPlanRuntimeState(BaseModel):
     """
-    In-memory state of the resiliency plan runner.
+    In-memory runtime state of resiliency plan processing.
 
-    Tracks the currently assigned plan experiment and its execution state.
+    Tracks the currently assigned plan and its lifecycle state.
     """
 
     plan: Optional[ResiliencyPlan] = None
-    state: ResiliencyPlanExecutionStateEnum = ResiliencyPlanExecutionStateEnum.AVAILABLE
+    state: ResiliencyPlanLifecycleStateEnum = ResiliencyPlanLifecycleStateEnum.IDLE
 
 
-class AgentStateModel(BaseModel):
+class AgentRuntimeState(BaseModel):
     """
     In-memory runtime state of the agent.
 
-    This model tracks agent health, runner state, and currently running
-    periodic tasks. It is not intended for persistence or API serialization.
+    Tracks agent health, resiliency plan lifecycle, and active workers.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    status: AgentStateEnum = AgentStateEnum.UNKNOWN
-    executor: ResiliencyPlanExecutionStateModel = Field(
-        default_factory=ResiliencyPlanExecutionStateModel
+    health: AgentHealthStatusEnum = AgentHealthStatusEnum.UNKNOWN
+    runner: ResiliencyPlanRuntimeState = Field(
+        default_factory=ResiliencyPlanRuntimeState
     )
     running_workers: List[asyncio.Task] = Field(default_factory=list)

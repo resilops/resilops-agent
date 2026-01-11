@@ -2,12 +2,12 @@ import logging
 
 from agent.clients.control_plane import ControlPlaneClient
 from agent.exceptions import ResiliencyPlanExecutionError
-from agent.schemas.resiliency import Experiment, ResiliencyPlan
+from agent.schemas.resiliency import ExperimentDefinition, ResiliencyPlan
 
 logger = logging.getLogger(__name__)
 
 
-class ResiliencyPlanExecutionHandler:
+class ResiliencyPlanRunner:
     """
     Executes experiment plan sequentially and emits execution events.
 
@@ -27,12 +27,12 @@ class ResiliencyPlanExecutionHandler:
         """
         try:
             for exp_id in plan.experiments:
-                _: Experiment = await self.client.fetch_experiment(
+                _: ExperimentDefinition = await self.client.fetch_experiment(
                     plan_id=plan.id, exp_id=exp_id
                 )
         except Exception as e:
             logger.exception("Unhandled error while executing plan %s", plan.id)
             raise ResiliencyPlanExecutionError(
-                "Experiment plan execution failed",
+                "ExperimentDefinition plan execution failed",
                 context={"plan": plan, "message": str(e)},
             )

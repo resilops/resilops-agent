@@ -2,15 +2,15 @@ import asyncio
 
 from agent.clients.control_plane import ControlPlaneClient
 from agent.core.lifecycle import LifecycleManager
-from agent.core.worker import WorkerManager
+from agent.core.manager import WorkerManager
 from agent.handlers.event import EventHandler
-from agent.handlers.execution import ResiliencyPlanExecutionHandler
-from agent.handlers.state import StateHandler
+from agent.handlers.runner import ResiliencyPlanRunner
+from agent.handlers.state import AgentStateHandler
 from agent.logging import setup_logging
 from agent.schemas.config import AgentConfigModel
-from agent.workers.executor import ResiliencyPlanExecutorWorker
-from agent.workers.fetcher import ResiliencyPlanFetcherWorker
 from agent.workers.heartbeat import HealthMonitorWorker
+from agent.workers.runner import ResiliencyPlanRunnerWorker
+from agent.workers.scheduler import ResiliencyPlanSchedulerWorker
 
 
 async def main() -> None:
@@ -31,13 +31,13 @@ async def main() -> None:
     control_plane_client = ControlPlaneClient(config)
 
     # Initialize agent runtime state
-    state_handler = StateHandler()
+    state_handler = AgentStateHandler()
 
     # Initialise event handler
     event_handler = EventHandler()
 
     # Create background workers
-    workers = (
+    workers = [
         HealthMonitorWorker(
             config=config,
             state_handler=state_handler,
@@ -45,23 +45,21 @@ async def main() -> None:
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
-        ResiliencyPlanFetcherWorker(
+        ResiliencyPlanSchedulerWorker(
             config=config,
             state_handler=state_handler,
             event_handler=event_handler,
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
-        ResiliencyPlanExecutorWorker(
+        ResiliencyPlanRunnerWorker(
             config=config,
             state_handler=state_handler,
             event_handler=event_handler,
-            execution_handler=ResiliencyPlanExecutionHandler(
-                client=control_plane_client
-            ),
+            runner=ResiliencyPlanRunner(client=control_plane_client),
             shutdown_event=shutdown_event,
         ),
-    )
+    ]
 
     # Initialize worker manager and lifecycle manager
     worker_manager = WorkerManager(
