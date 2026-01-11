@@ -7,7 +7,7 @@ from agent.handlers.event import EventHandler
 from agent.handlers.state import StateHandler
 from agent.schemas.config import AgentConfigModel
 from agent.schemas.event import AgentEventEnum
-from agent.schemas.resiliency import ResiliencyPlanModel
+from agent.schemas.resiliency import ResiliencyPlan
 from agent.workers.base import PeriodicWorker
 
 logger = logging.getLogger(__name__)
@@ -26,8 +26,8 @@ class ResiliencyPlanFetcherWorker(PeriodicWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        state: StateHandler,
-        event: EventHandler,
+        state_handler: StateHandler,
+        event_handler: EventHandler,
         shutdown_event: asyncio.Event,
         client: ControlPlaneClient,
     ):
@@ -36,12 +36,12 @@ class ResiliencyPlanFetcherWorker(PeriodicWorker):
 
         Args:
             config: Agent configuration containing polling interval.
-            state: Internal state handler.
-            event: Event handler.
+            state_handler: Internal state handler.
+            event_handler: Event handler.
             shutdown_event: Async event used to gracefully stop the worker loop.
             client: API client used to fetch and acknowledge resiliency plans.
         """
-        super().__init__(config, state, event, shutdown_event)
+        super().__init__(config, state_handler, event_handler, shutdown_event)
         self.client = client
 
     @property
@@ -61,9 +61,12 @@ class ResiliencyPlanFetcherWorker(PeriodicWorker):
         Returns:
             bool: True if the worker can run, False if it should be skipped.
         """
-        return self.state.agent.is_healthy and self.state.executor.is_available
+        return (
+            self.state_handler.agent.is_healthy
+            and self.state_handler.executor.is_available
+        )
 
-    async def execute_iteration(self) -> Optional[Dict[str, ResiliencyPlanModel]]:
+    async def execute_iteration(self) -> Optional[Dict[str, ResiliencyPlan]]:
         """
         Execute a single polling iteration.
         Fetches a resiliency plan from the control plane and acknowledges it.
@@ -73,7 +76,7 @@ class ResiliencyPlanFetcherWorker(PeriodicWorker):
             A dictionary containing the fetched plan, or None if no plan is available.
         """
         # Fetch new plan and acknowledge
-        plan: ResiliencyPlanModel = await self.client.fetch_plan()
+        plan: ResiliencyPlan = await self.client.fetch_plan()
 
         # Acknowledge plan if available
         if plan.available:
@@ -91,16 +94,17 @@ class ResiliencyPlanFetcherWorker(PeriodicWorker):
             context: Context dictionary returned by `execute_iteration`,
                      containing the plan.
         """
-        plan: ResiliencyPlanModel = context.get("plan")
+        plan: ResiliencyPlan = context.get("plan")
 
         # If plan is not available skip enqueue
         if not plan or not plan.available:
             return
 
-        self.state.executor.enqueue_plan(context.get("plan"))
-        self.event.push(
-            AgentEventEnum.PLAN_QUEUED,
-            {"plan_id": plan.id, "run_id": plan.run_id, "details": "Plan queued."},
+        self.state_handler.executor.enqueue_plan(context.get("plan"))
+        self.event_handler.publish(
+            plan=plan,
+            name=AgentEventEnum.PLAN_QUEUED,
+            payload={"details": "Plan queued."},
         )
 
     async def on_execution_error(

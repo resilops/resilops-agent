@@ -4,9 +4,7 @@ from enum import Enum
 class AgentEventEnum(str, Enum):
     """All events enum"""
 
-    PLAN_QUEUED = "plan:queued"
-    PLAN_EXECUTING = "plan:executing"
-    PLAN_EXECUTION_SUCCESS = "plan:execution:success"
-    PLAN_EXECUTION_FAILED = "plan:execution:failed"
-
-    RESILIENCY_PLAN_EXECUTION_ERROR = "resiliency:plan:execution:error"
+    PLAN_QUEUED = "agent:plan:queued"
+    PLAN_EXECUTING = "agent:plan:executing"
+    PLAN_EXECUTION_SUCCESS = "agent:plan:execution:success"
+    PLAN_EXECUTION_FAILED = "agent:plan:execution:failed"

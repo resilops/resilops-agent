@@ -3,7 +3,6 @@ import logging
 import signal
 
 from agent.core.worker import WorkerManager
-from agent.handlers.state import StateHandler
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,6 @@ class LifecycleManager:
 
     def __init__(
         self,
-        state: StateHandler,
         worker_manager: WorkerManager,
         shutdown_event: asyncio.Event,
     ):
@@ -31,11 +29,9 @@ class LifecycleManager:
         Initialize the lifecycle manager.
 
         Args:
-            state: Agent's state handler.
             worker_manager: Responsible for starting/stopping background workers.
             shutdown_event: Async event used to signal shutdown.
         """
-        self.state = state
         self.worker_manager = worker_manager
         self.shutdown_event = shutdown_event
 

@@ -9,53 +9,30 @@ RESILIENCY_PLAN = {
     "id": 123,
     "run_id": 123,
     "title": "Resiliency Plan 1",
+    "tags": ["kubernetes"],
     "available": True,
     "execution": {
         "mode": "series",  # Supports only "series" for now
         "stop_on_failure": True,  # stop executing further steps if one fails
     },
-    "steps": [1, 2, 3],
+    "experiments": [1, 2, 3],
 }
 
-RESILIENCY_EXAMPLE = {
+EXPERIMENT_EXAMPLE = {
+    "id": 234,
+    "plan_id": 123,
     "title": "Do we remain available in face of pod going down?",
     "description": (
         "We expect Kubernetes to handle the situation gracefully when a pod goes down"
     ),
-    "tags": ["kubernetes"],
-    "steady-state-hypothesis": {
-        "title": "Verifying service remains healthy",
-        "probes": [
-            {
-                "name": "all-our-microservices-should-be-healthy",
-                "type": "probe",
-                "tolerance": True,
-                "secrets": ["k8s"],
-                "provider": {
-                    "type": "python",
-                    "module": "chaosk8s.probes",
-                    "func": "microservice_available_and_healthy",
-                    "arguments": {"name": "myapp"},
-                },
-            }
-        ],
+    "experiment": {
+        "name": "PodKillExperiment",
+        "args": {
+            "namespace": "abc",
+            "label": "myapp",
+            "quantity": 25,
+            "mode": "percentage",
+        },
     },
-    "method": [
-        {
-            "type": "action",
-            "name": "terminate-db-pod",
-            "secrets": ["k8s"],
-            "provider": {
-                "type": "python",
-                "module": "chaosk8s.pod.actions",
-                "func": "terminate_pods",
-                "arguments": {
-                    "label_selector": "app=my-app",
-                    "name_pattern": "my-app-[0-9]$",
-                    "rand": True,
-                },
-            },
-            "pauses": {"after": 5},
-        }
-    ],
+    "probe": {"name": "HttpReadinessProbe", "args": {"endpoint": "", "timeout": 3}},
 }

@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from agent.schemas.resiliency import ResiliencyPlanModel
+from agent.schemas.resiliency import ResiliencyPlan
 
 
 class AgentStateEnum(str, Enum):
@@ -27,10 +27,10 @@ class ResiliencyPlanExecutionStateModel(BaseModel):
     """
     In-memory state of the resiliency plan runner.
 
-    Tracks the currently assigned plan step and its execution state.
+    Tracks the currently assigned plan experiment and its execution state.
     """
 
-    plan: Optional[ResiliencyPlanModel] = None
+    plan: Optional[ResiliencyPlan] = None
     state: ResiliencyPlanExecutionStateEnum = ResiliencyPlanExecutionStateEnum.AVAILABLE
 
 

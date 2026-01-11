@@ -49,13 +49,13 @@ class PeriodicWorker(BaseWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        state: StateHandler,
-        event: EventHandler,
+        state_handler: StateHandler,
+        event_handler: EventHandler,
         shutdown_event: asyncio.Event,
     ):
         self.config = config
-        self.state = state
-        self.event = event
+        self.state_handler = state_handler
+        self.event_handler = event_handler
         self.shutdown_event = shutdown_event
 
     async def _execute_safely(self) -> None:

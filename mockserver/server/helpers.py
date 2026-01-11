@@ -42,6 +42,6 @@ def get_resiliency_plan() -> Dict:
     )
 
 
-def get_resiliency_plan_step() -> Dict:
+def get_experiment() -> Dict:
     """Returns a respective resiliency plan step"""
-    return constants.RESILIENCY_EXAMPLE
+    return constants.EXPERIMENT_EXAMPLE

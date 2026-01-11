@@ -30,11 +30,11 @@ async def agent_acknowledge_plan(request: Request):
     return failure or JSONResponse({"status": "ok"})
 
 
-@app.get("/api/v1/agent/plan/{plan_id}/step/{step_id}")
-async def agent_fetch_plan_step(plan_id: int, step_id: int):
+@app.get("/api/v1/agent/plan/{plan_id}/experiment/{exp_id}")
+async def agent_fetch_experiment(plan_id: int, exp_id: int):
     """Simulate fetching a new resiliency plan step."""
     await h.maybe_delay()
     failure = await h.maybe_fail()
-    step = h.get_resiliency_plan_step()
-    step["id"] = step_id
-    return failure or JSONResponse(step)
+    exp = h.get_experiment()
+    exp["id"] = exp_id
+    return failure or JSONResponse(exp)

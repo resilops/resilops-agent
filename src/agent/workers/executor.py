@@ -7,7 +7,7 @@ from agent.handlers.resiliency import ResiliencyPlanExecutionHandler
 from agent.handlers.state import StateHandler
 from agent.schemas.config import AgentConfigModel
 from agent.schemas.event import AgentEventEnum
-from agent.schemas.resiliency import ResiliencyPlanModel
+from agent.schemas.resiliency import ResiliencyPlan
 from agent.workers.base import PeriodicWorker
 
 logger = logging.getLogger(__name__)
@@ -27,9 +27,9 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        state: StateHandler,
-        event: EventHandler,
-        executor: ResiliencyPlanExecutionHandler,
+        state_handler: StateHandler,
+        event_handler: EventHandler,
+        execution_handler: ResiliencyPlanExecutionHandler,
         shutdown_event: asyncio.Event,
     ):
         """
@@ -37,13 +37,13 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
 
         Args:
             config: Agent configuration containing the executor interval.
-            state: Internal state handler.
-            event: Event handler.
-            executor: Resiliency plan execution handler.
+            state_handler: Internal state handler.
+            event_handler: Event handler.
+            execution_handler: Resiliency plan execution handler.
             shutdown_event: Async event used to gracefully stop the worker loop.
         """
-        super().__init__(config, state, event, shutdown_event)
-        self.executor = executor
+        super().__init__(config, state_handler, event_handler, shutdown_event)
+        self.execution_handler = execution_handler
 
     @property
     def execution_interval(self) -> int:
@@ -62,7 +62,10 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
         Returns:
             bool: True if the worker can run, False if it should be skipped.
         """
-        return self.state.agent.is_healthy and self.state.executor.is_queued
+        return (
+            self.state_handler.agent.is_healthy
+            and self.state_handler.executor.is_queued
+        )
 
     async def execute_iteration(self) -> Optional[Dict[str, Any]]:
         """
@@ -72,13 +75,14 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
             A context dictionary containing:
                 - 'plan': The executed plan object, or None if no plan was queued.
         """
-        plan: ResiliencyPlanModel = self.state.executor.current_plan
-        self.state.executor.mark_executing()
-        self.event.push(
-            AgentEventEnum.PLAN_EXECUTING,
-            {"plan_id": plan.id, "run_id": plan.run_id, "details": "Plan executing"},
+        plan: ResiliencyPlan = self.state_handler.executor.current_plan
+        self.state_handler.executor.mark_executing()
+        self.event_handler.publish(
+            plan=plan,
+            name=AgentEventEnum.PLAN_EXECUTING,
+            payload={"details": "Plan executing"},
         )
-        await self.executor.run_plan(plan)
+        await self.execution_handler.run(plan)
         return {"plan": plan}
 
     async def on_execution_success(self, context: Dict[str, Any]) -> None:
@@ -91,15 +95,12 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
             context: Context dictionary returned by `execute_iteration`,
                      may contain 'plan'.
         """
-        plan: ResiliencyPlanModel = context.get("plan")
-        self.state.executor.reset()
-        self.event.push(
-            AgentEventEnum.PLAN_EXECUTION_SUCCESS,
-            {
-                "plan_id": plan.id,
-                "run_id": plan.run_id,
-                "details": "Plan executed successfully.",
-            },
+        plan: ResiliencyPlan = context.get("plan")
+        self.state_handler.executor.reset()
+        self.event_handler.publish(
+            plan=plan,
+            name=AgentEventEnum.PLAN_EXECUTION_SUCCESS,
+            payload={"details": "Plan executed successfully."},
         )
 
     async def on_execution_error(
@@ -115,31 +116,12 @@ class ResiliencyPlanExecutorWorker(PeriodicWorker):
                      may contain 'plan'.
             error: Exception raised during plan execution.
         """
-        # Any error raised should have the context with plan and failures
-        plan, failures = context.get("plan"), context.get("failures")
-        self.state.executor.reset()
+        # Any error raised should have the context with plan and message
+        plan, err = context.get("plan"), context.get("message")
+        self.state_handler.executor.reset()
 
-        for failure in failures:
-            self.event.push(
-                AgentEventEnum.RESILIENCY_PLAN_EXECUTION_ERROR,
-                {
-                    "plan_id": plan.id,
-                    "run_id": plan.run_id,
-                    "step_id": failure.get("step_id"),
-                    "details": failure.get("message"),
-                },
-            )
-
-        self.event.push(
-            AgentEventEnum.PLAN_EXECUTION_FAILED,
-            {
-                "plan_id": plan.id,
-                "run_id": plan.run_id,
-                "details": (
-                    f"Resiliency execution or API failed. "
-                    f"See "
-                    f"'{AgentEventEnum.RESILIENCY_PLAN_EXECUTION_ERROR.value}' "
-                    f"event."
-                ),
-            },
+        self.event_handler.publish(
+            plan=plan,
+            name=AgentEventEnum.PLAN_EXECUTION_FAILED,
+            payload={"details": "Resiliency plan execution failed.", "message": err},
         )

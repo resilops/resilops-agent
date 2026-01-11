@@ -4,7 +4,7 @@ from agent.clients.control_plane import ControlPlaneClient
 from agent.core.lifecycle import LifecycleManager
 from agent.core.worker import WorkerManager
 from agent.handlers.event import EventHandler
-from agent.handlers.resiliency import ResiliencyPlanExecutionHandler
+from agent.handlers.execution import ResiliencyPlanExecutionHandler
 from agent.handlers.state import StateHandler
 from agent.logging import setup_logging
 from agent.schemas.config import AgentConfigModel
@@ -31,42 +31,44 @@ async def main() -> None:
     control_plane_client = ControlPlaneClient(config)
 
     # Initialize agent runtime state
-    state = StateHandler()
+    state_handler = StateHandler()
 
     # Initialise event handler
-    event = EventHandler()
+    event_handler = EventHandler()
 
     # Create background workers
     workers = (
         HealthMonitorWorker(
             config=config,
-            state=state,
-            event=event,
+            state_handler=state_handler,
+            event_handler=event_handler,
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
         ResiliencyPlanFetcherWorker(
             config=config,
-            state=state,
-            event=event,
+            state_handler=state_handler,
+            event_handler=event_handler,
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
         ResiliencyPlanExecutorWorker(
             config=config,
-            state=state,
-            event=event,
-            executor=ResiliencyPlanExecutionHandler(client=control_plane_client),
+            state_handler=state_handler,
+            event_handler=event_handler,
+            execution_handler=ResiliencyPlanExecutionHandler(
+                client=control_plane_client
+            ),
             shutdown_event=shutdown_event,
         ),
     )
 
     # Initialize worker manager and lifecycle manager
     worker_manager = WorkerManager(
-        state=state, workers=workers, shutdown_event=shutdown_event
+        state_handler=state_handler, workers=workers, shutdown_event=shutdown_event
     )
     lifecycle_manager = LifecycleManager(
-        state=state, worker_manager=worker_manager, shutdown_event=shutdown_event
+        worker_manager=worker_manager, shutdown_event=shutdown_event
     )
 
     # Run the agent lifecycle

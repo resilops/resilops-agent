@@ -26,8 +26,8 @@ class HealthMonitorWorker(PeriodicWorker):
     def __init__(
         self,
         config: AgentConfigModel,
-        state: StateHandler,
-        event: EventHandler,
+        state_handler: StateHandler,
+        event_handler: EventHandler,
         shutdown_event: asyncio.Event,
         client: ControlPlaneClient,
     ):
@@ -36,12 +36,12 @@ class HealthMonitorWorker(PeriodicWorker):
 
         Args:
             config: Agent configuration containing health report interval settings.
-            state: Internal state handler.
-            event: Event handler.
+            state_handler: Internal state handler.
+            event_handler: Event handler.
             shutdown_event: Async event used to gracefully stop the worker loop.
             client: API client used to communicate with the control plane.
         """
-        super().__init__(config, state, event, shutdown_event)
+        super().__init__(config, state_handler, event_handler, shutdown_event)
         self.client = client
 
     @property
@@ -74,7 +74,7 @@ class HealthMonitorWorker(PeriodicWorker):
         Args:
             context: Context returned by `execute_iteration` (unused).
         """
-        self.state.agent.set_health(healthy=True)
+        self.state_handler.agent.set_health(healthy=True)
 
     async def on_execution_error(
         self, context: Dict[str, Any], error: Exception
@@ -87,4 +87,4 @@ class HealthMonitorWorker(PeriodicWorker):
             error: Exception raised during health report execution.
         """
         logger.error("Health report request failed: %s", exc_info=error)
-        self.state.agent.set_health(healthy=False)
+        self.state_handler.agent.set_health(healthy=False)

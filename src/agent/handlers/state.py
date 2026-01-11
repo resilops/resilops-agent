@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Optional, Type
 
-from agent.schemas.resiliency import ResiliencyPlanModel
+from agent.schemas.resiliency import ResiliencyPlan
 from agent.schemas.state import (
     AgentStateEnum,
     AgentStateModel,
@@ -17,7 +17,7 @@ class ExecutorStateHandler:
         self._executor = executor
 
     @property
-    def current_plan(self) -> Optional[ResiliencyPlanModel]:
+    def current_plan(self) -> Optional[ResiliencyPlan]:
         """Return the currently assigned resiliency plan, if any."""
         return self._executor.plan
 
@@ -40,7 +40,7 @@ class ExecutorStateHandler:
         """Mark the plan execution as currently executing."""
         self._executor.state = ResiliencyPlanExecutionStateEnum.EXECUTING
 
-    def enqueue_plan(self, plan: ResiliencyPlanModel) -> bool:
+    def enqueue_plan(self, plan: ResiliencyPlan) -> bool:
         """
         Queue a resiliency plan for execution if the execution slot is available.
 
@@ -96,7 +96,7 @@ class StateHandler:
     def __init__(
         self,
         agent_state_handler_cls: Type[AgentStateHandler] = AgentStateHandler,
-        executor_state_handler_cls: Type[ExecutorStateHandler] = (ExecutorStateHandler),
+        executor_state_handler_cls: Type[ExecutorStateHandler] = ExecutorStateHandler,
     ):
         self._state = AgentStateModel()
 

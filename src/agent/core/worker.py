@@ -20,7 +20,7 @@ class WorkerManager:
 
     def __init__(
         self,
-        state: StateHandler,
+        state_handler: StateHandler,
         workers: Iterable[PeriodicWorker],
         shutdown_event: asyncio.Event,
     ):
@@ -28,11 +28,11 @@ class WorkerManager:
         Initialize the worker manager.
 
         Args:
-            state: Internal state handler
+            state_handler: Internal state handler
             workers: Iterable of periodic workers to manage.
             shutdown_event: Asyncio event used to signal shutdown.
         """
-        self.state = state
+        self.state_handler = state_handler
         self.workers: List[PeriodicWorker] = list(workers)
         self.shutdown_event = shutdown_event
 
@@ -46,7 +46,7 @@ class WorkerManager:
             asyncio.create_task(worker.run_continuously(), name=worker.WORKER_NAME)
             for worker in self.workers
         ]
-        self.state.agent.register_workers(workers)
+        self.state_handler.agent.register_workers(workers)
         logger.info(
             "Started %d background workers",
             len(self.workers),
@@ -62,12 +62,12 @@ class WorkerManager:
         logger.info("Initiating shutdown of background workers")
         self.shutdown_event.set()  # Signal all workers to stop
 
-        for worker in self.state.agent.current_workers:
+        for worker in self.state_handler.agent.current_workers:
             worker.cancel()  # Cancel each asyncio task
 
         # Wait for all worker tasks to complete and collect exceptions
         results = await asyncio.gather(
-            *self.state.agent.current_workers, return_exceptions=True
+            *self.state_handler.agent.current_workers, return_exceptions=True
         )
 
         # Log exceptions, if any

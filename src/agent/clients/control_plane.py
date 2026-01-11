@@ -3,7 +3,7 @@ from typing import Dict
 
 from agent.clients.base import BaseAPIClient
 from agent.schemas.heartbeat import HeartbeatResponseModel
-from agent.schemas.resiliency import ExperimentStepModel, ResiliencyPlanModel
+from agent.schemas.resiliency import Experiment, ResiliencyPlan
 
 logger = logging.getLogger(__name__)
 
@@ -40,17 +40,17 @@ class ControlPlaneClient(BaseAPIClient):
         response: Dict = await self.request("GET", "/api/v1/agent/heartbeat")
         return HeartbeatResponseModel(**response)
 
-    async def fetch_plan(self) -> ResiliencyPlanModel:
+    async def fetch_plan(self) -> ResiliencyPlan:
         """
         Fetch the next resiliency plan from the control plane.
 
         Returns:
-            ResiliencyPlanModel: Resiliency plan details, or an empty plan if
+            ResiliencyPlan: Resiliency plan details, or an empty plan if
             none available.
         """
         logger.debug("Fetching resiliency plan from control plane")
         response: Dict = await self.request("GET", "/api/v1/agent/plan")
-        return ResiliencyPlanModel(**response)
+        return ResiliencyPlan(**response)
 
     async def ack_plan(self, plan_id: int) -> None:
         """Acknowledge that a resiliency plan has been received."""
@@ -58,15 +58,15 @@ class ControlPlaneClient(BaseAPIClient):
         await self.request("POST", "/api/v1/agent/plan/ack", json={"id": plan_id})
         return
 
-    async def fetch_plan_step(self, plan_id: int, step_id: int) -> ExperimentStepModel:
+    async def fetch_experiment(self, plan_id: int, exp_id: int) -> Experiment:
         """
-        Fetch the resiliency plan step information given id.
+        Fetch the resiliency experiment information given id.
 
         Returns:
-            ExperimentStepModel: Returns step information as ExperimentStepModel.
+            Experiment: Returns experiment instructions.
         """
-        logger.debug("Fetching resiliency plan from control plane")
+        logger.debug("Fetching resiliency experiment from control plane")
         response: Dict = await self.request(
-            "GET", f"/api/v1/agent/plan/{plan_id}/step/{step_id}"
+            "GET", f"/api/v1/agent/plan/{plan_id}/experiment/{exp_id}"
         )
-        return ExperimentStepModel(**response)
+        return Experiment(**response)
