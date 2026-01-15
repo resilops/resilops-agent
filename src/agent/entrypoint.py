@@ -4,13 +4,13 @@ from agent.clients.control_plane import ControlPlaneClient
 from agent.core.lifecycle import LifecycleManager
 from agent.core.manager import WorkerManager
 from agent.handlers.event import EventHandler
-from agent.handlers.runner import ResiliencyPlanRunner
+from agent.handlers.runner import ResiliencySuiteRunner
 from agent.handlers.state import AgentStateHandler
 from agent.logging import setup_logging
 from agent.schemas.config import AgentConfigModel
 from agent.workers.heartbeat import HealthMonitorWorker
-from agent.workers.runner import ResiliencyPlanRunnerWorker
-from agent.workers.scheduler import ResiliencyPlanSchedulerWorker
+from agent.workers.runner import ResiliencySuiteRunnerWorker
+from agent.workers.scheduler import ResiliencySuiteSchedulerWorker
 
 
 async def main() -> None:
@@ -45,18 +45,18 @@ async def main() -> None:
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
-        ResiliencyPlanSchedulerWorker(
+        ResiliencySuiteSchedulerWorker(
             config=config,
             state_handler=state_handler,
             event_handler=event_handler,
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
-        ResiliencyPlanRunnerWorker(
+        ResiliencySuiteRunnerWorker(
             config=config,
             state_handler=state_handler,
             event_handler=event_handler,
-            runner=ResiliencyPlanRunner(client=control_plane_client),
+            runner=ResiliencySuiteRunner(client=control_plane_client),
             shutdown_event=shutdown_event,
         ),
     ]

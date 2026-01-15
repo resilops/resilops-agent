@@ -1,38 +1,38 @@
 import logging
 
 from agent.clients.control_plane import ControlPlaneClient
-from agent.exceptions import ResiliencyPlanExecutionError
-from agent.schemas.resiliency import ExperimentDefinition, ResiliencyPlan
+from agent.exceptions import ResiliencySuiteExecutionError
+from agent.schemas.suite import ResiliencyScenario, ResiliencySuite
 
 logger = logging.getLogger(__name__)
 
 
-class ResiliencyPlanRunner:
+class ResiliencySuiteRunner:
     """
-    Executes experiment plan sequentially and emits execution events.
+    Executes scenarios sequentially and emits execution events.
 
     Responsibilities:
-        - Fetch steps from control plane
-        - Execute experiment (one-shot)
+        - Fetch scenarios from control plane
+        - Execute suite (one-shot)
         - Stop execution on failure if configured
     """
 
     def __init__(self, client: ControlPlaneClient) -> None:
         self.client = client
 
-    async def run(self, plan: ResiliencyPlan) -> None:
+    async def run(self, suite: ResiliencySuite) -> None:
         """
-        Raises exception if any of the experiment execution failed
+        Raises exception if any of the scenario execution failed
         or some api error
         """
         try:
-            for exp_id in plan.experiments:
-                _: ExperimentDefinition = await self.client.fetch_experiment(
-                    plan_id=plan.id, exp_id=exp_id
+            for scenario_id in suite.scenarios:
+                _: ResiliencyScenario = await self.client.fetch_scenario(
+                    suite_id=suite.id, scenario_id=scenario_id
                 )
         except Exception as e:
-            logger.exception("Unhandled error while executing plan %s", plan.id)
-            raise ResiliencyPlanExecutionError(
-                "ExperimentDefinition plan execution failed",
-                context={"plan": plan, "message": str(e)},
+            logger.exception("Unhandled error while executing suite %s", suite.id)
+            raise ResiliencySuiteExecutionError(
+                "Suite execution failed",
+                context={"suite": suite, "message": str(e)},
             )

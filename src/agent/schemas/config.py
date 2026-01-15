@@ -29,10 +29,11 @@ class AgentConfigModel(BaseSettings):
         3, description="Interval between heartbeat signals to the control plane"
     )
     runner_interval: int = Field(
-        2, description="Interval for executing queued resiliency plans"
+        2, description="Interval for executing queued resiliency suites"
     )
-    resiliency_plan_poll_interval: int = Field(
-        2, description="Interval for polling the control plane for new resiliency plans"
+    resiliency_suite_poll_interval: int = Field(
+        2,
+        description="Interval for polling the control plane for new resiliency suites",
     )
     event_publish_interval: int = Field(
         5, description="Interval for publishing the event"

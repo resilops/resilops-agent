@@ -3,7 +3,7 @@ from typing import Dict
 
 from agent.clients.base import BaseAPIClient
 from agent.schemas.heartbeat import HeartbeatResponseModel
-from agent.schemas.resiliency import ExperimentDefinition, ResiliencyPlan
+from agent.schemas.suite import ResiliencyScenario, ResiliencySuite
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +15,8 @@ class ControlPlaneClient(BaseAPIClient):
     Provides methods for:
     - Registering the agent
     - Sending periodic heartbeat signals
-    - Fetching resiliency plans
-    - Acknowledging executed plans
+    - Fetching resiliency suite
+    - Acknowledging suite
     """
 
     @property
@@ -40,33 +40,35 @@ class ControlPlaneClient(BaseAPIClient):
         response: Dict = await self.request("GET", "/api/v1/agent/heartbeat")
         return HeartbeatResponseModel(**response)
 
-    async def fetch_plan(self) -> ResiliencyPlan:
+    async def fetch_suite(self) -> ResiliencySuite:
         """
-        Fetch the next resiliency plan from the control plane.
+        Fetch the next resiliency suite from the control plane.
 
         Returns:
-            ResiliencyPlan: Resiliency plan details, or an empty plan if
+            ResiliencySuite: Resiliency suite details, or an empty suite if
             none available.
         """
-        logger.debug("Fetching resiliency plan from control plane")
-        response: Dict = await self.request("GET", "/api/v1/agent/plan")
-        return ResiliencyPlan(**response)
+        logger.debug("Fetching resiliency suite from control plane")
+        response: Dict = await self.request("GET", "/api/v1/agent/suite")
+        return ResiliencySuite(**response)
 
-    async def ack_plan(self, plan_id: int) -> None:
-        """Acknowledge that a resiliency plan has been received."""
-        logger.info("Acknowledging plan with ID: %d", plan_id)
-        await self.request("POST", "/api/v1/agent/plan/ack", json={"id": plan_id})
+    async def ack_suite(self, suite_id: int) -> None:
+        """Acknowledge that a resiliency suite has been received."""
+        logger.info("Acknowledging suite with ID: %d", suite_id)
+        await self.request("POST", "/api/v1/agent/suite/ack", json={"id": suite_id})
         return
 
-    async def fetch_experiment(self, plan_id: int, exp_id: int) -> ExperimentDefinition:
+    async def fetch_scenario(
+        self, suite_id: int, scenario_id: int
+    ) -> ResiliencyScenario:
         """
-        Fetch the resiliency experiment information given id.
+        Fetch the resiliency scenario information given id.
 
         Returns:
-            ExperimentDefinition: Returns experiment instructions.
+            ResiliencyScenario: Returns scenario instructions.
         """
-        logger.debug("Fetching resiliency experiment from control plane")
+        logger.debug("Fetching resiliency scenario from control plane")
         response: Dict = await self.request(
-            "GET", f"/api/v1/agent/plan/{plan_id}/experiment/{exp_id}"
+            "GET", f"/api/v1/agent/suite/{suite_id}/scenario/{scenario_id}"
         )
-        return ExperimentDefinition(**response)
+        return ResiliencyScenario(**response)

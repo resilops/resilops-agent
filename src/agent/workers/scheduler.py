@@ -8,20 +8,20 @@ from agent.handlers.event import EventHandler
 from agent.handlers.state import AgentStateHandler
 from agent.schemas.config import AgentConfigModel
 from agent.schemas.event import AgentEventEnum
-from agent.schemas.resiliency import ResiliencyPlan
+from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
 
 
-class ResiliencyPlanSchedulerWorker(PeriodicWorker):
+class ResiliencySuiteSchedulerWorker(PeriodicWorker):
     """
-    Periodic worker responsible for scheduling resiliency plans.
+    Periodic worker responsible for scheduling resiliency suites.
 
-    Polls the control plane for available resiliency plans, acknowledges
-    them, and enqueues eligible plans for execution.
+    Polls the control plane for available resiliency suites, acknowledges
+    them, and enqueues eligible suites for execution.
     """
 
-    WORKER_NAME: str = "plan_scheduler"
+    WORKER_NAME: str = "suite_scheduler"
 
     def __init__(
         self,
@@ -32,7 +32,7 @@ class ResiliencyPlanSchedulerWorker(PeriodicWorker):
         client: ControlPlaneClient,
     ) -> None:
         """
-        Initialize the resiliency plan scheduler worker.
+        Initialize the resiliency suite scheduler worker.
 
         Args:
             config: Agent configuration containing polling interval.
@@ -52,56 +52,56 @@ class ResiliencyPlanSchedulerWorker(PeriodicWorker):
         Returns:
             Polling interval defined in the agent configuration.
         """
-        return self.config.resiliency_plan_poll_interval
+        return self.config.resiliency_suite_poll_interval
 
     async def should_execute(self) -> bool:
         """
-        Determine whether the scheduler can poll for new plans.
+        Determine whether the scheduler can poll for new suite.
 
         Returns:
-            True if the agent is healthy and ready to enqueue a plan.
+            True if the agent is healthy and ready to enqueue a suite.
         """
         return self.state_handler.agent.is_healthy and self.state_handler.runner.is_idle
 
-    async def execute_iteration(self) -> Optional[Dict[str, ResiliencyPlan]]:
+    async def execute_iteration(self) -> Optional[Dict[str, ResiliencySuite]]:
         """
-        Poll the control plane for a resiliency plan and acknowledge it.
+        Poll the control plane for a resiliency suite and acknowledge it.
 
         Returns:
-            Context dictionary containing the fetched plan,
-            or None if no plan was returned.
+            Context dictionary containing the fetched suite,
+            or None if no suite was returned.
         """
-        plan: ResiliencyPlan = await self.client.fetch_plan()
+        suite: ResiliencySuite = await self.client.fetch_plan()
 
-        if plan and plan.available:
-            await self.client.ack_plan(plan.id)
+        if suite and suite.available:
+            await self.client.ack_suite(suite.id)
 
-        return {"plan": plan}
+        return {"suite": suite}
 
     async def on_execution_success(self, context: Dict[str, Any]) -> None:
         """
-        Enqueue the fetched resiliency plan for execution.
+        Enqueue the fetched resiliency suite for execution.
 
         Args:
-            context: Context dictionary containing the fetched plan.
+            context: Context dictionary containing the fetched suite.
         """
-        plan: ResiliencyPlan = context.get("plan")
+        suite: ResiliencySuite = context.get("suite")
 
-        if not plan or not plan.available:
+        if not suite or not suite.available:
             return
 
-        self.state_handler.runner.enqueue(plan)
+        self.state_handler.runner.enqueue(suite)
         self.event_handler.publish(
-            plan=plan,
-            name=AgentEventEnum.PLAN_QUEUED,
-            payload={"details": "Resiliency plan queued for execution."},
+            suite=suite,
+            name=AgentEventEnum.SUITE_QUEUED,
+            payload={"details": "Resiliency suite queued for execution."},
         )
 
     async def on_execution_error(
         self, context: Dict[str, Any], error: Exception
     ) -> None:
-        """Handle errors during polling without enqueuing any plan."""
+        """Handle errors during polling without enqueuing any suite."""
         logger.error(
-            "Failed to poll resiliency plan from control plane",
+            "Failed to poll resiliency suite from control plane",
             exc_info=error,
         )

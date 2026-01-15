@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from agent.schemas.resiliency import ResiliencyPlan
+from agent.schemas.suite import ResiliencySuite
 
 
 class AgentHealthStatusEnum(str, Enum):
@@ -15,36 +15,36 @@ class AgentHealthStatusEnum(str, Enum):
     UNKNOWN = "unknown"
 
 
-class ResiliencyPlanLifecycleStateEnum(str, Enum):
-    """Represents the execution state of the resiliency plan runner."""
+class ResiliencySuiteLifecycleStateEnum(str, Enum):
+    """Represents the execution state of the resiliency suite runner."""
 
     RUNNING = "running"
     QUEUED = "queued"
     IDLE = "idle"
 
 
-class ResiliencyPlanRuntimeState(BaseModel):
+class ResiliencySuiteRuntimeState(BaseModel):
     """
-    In-memory runtime state of resiliency plan processing.
+    In-memory runtime state of resiliency suite processing.
 
-    Tracks the currently assigned plan and its lifecycle state.
+    Tracks the currently assigned suite and its lifecycle state.
     """
 
-    plan: Optional[ResiliencyPlan] = None
-    state: ResiliencyPlanLifecycleStateEnum = ResiliencyPlanLifecycleStateEnum.IDLE
+    suite: Optional[ResiliencySuite] = None
+    state: ResiliencySuiteLifecycleStateEnum = ResiliencySuiteLifecycleStateEnum.IDLE
 
 
 class AgentRuntimeState(BaseModel):
     """
     In-memory runtime state of the agent.
 
-    Tracks agent health, resiliency plan lifecycle, and active workers.
+    Tracks agent health, resiliency suite lifecycle, and active workers.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     health: AgentHealthStatusEnum = AgentHealthStatusEnum.UNKNOWN
-    runner: ResiliencyPlanRuntimeState = Field(
-        default_factory=ResiliencyPlanRuntimeState
+    runner: ResiliencySuiteRuntimeState = Field(
+        default_factory=ResiliencySuiteRuntimeState
     )
     running_workers: List[asyncio.Task] = Field(default_factory=list)

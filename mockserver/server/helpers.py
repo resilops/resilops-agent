@@ -33,15 +33,15 @@ async def maybe_delay() -> None:
     await asyncio.sleep(random.uniform(0, constants.MAX_DELAY))
 
 
-def get_resiliency_plan() -> Dict:
-    """Returns a respective resiliency plan"""
+def get_resiliency_suite() -> Dict:
+    """Returns a respective resiliency suite"""
     return (
-        constants.RESILIENCY_PLAN
-        if random.random() > constants.RESILIENCY_PLAN_EMPTY_RATE
-        else constants.RESILIENCY_EMPTY_PLAN
+        constants.RESILIENCY_SUITE
+        if random.random() > constants.RESILIENCY_SUITE_EMPTY_RATE
+        else constants.RESILIENCY_EMPTY_SUITE
     )
 
 
-def get_experiment() -> Dict:
-    """Returns a respective resiliency plan step"""
-    return constants.EXPERIMENT_EXAMPLE
+def get_scenario() -> Dict:
+    """Returns a respective resiliency scenario"""
+    return constants.RESILIENCY_SCENARIO

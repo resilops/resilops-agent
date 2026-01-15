@@ -15,7 +15,7 @@ class APIRequestError(Exception):
         self.context = context or {}
 
 
-class ResiliencyPlanExecutionError(Exception):
+class ResiliencySuiteExecutionError(Exception):
 
     def __init__(
         self,

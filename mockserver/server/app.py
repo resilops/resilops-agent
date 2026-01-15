@@ -13,28 +13,28 @@ async def agent_heartbeat():
     return failure or JSONResponse({"status": "ok"})
 
 
-@app.get("/api/v1/agent/plan")
-async def agent_fetch_plan():
-    """Simulate fetching a new resiliency plan."""
+@app.get("/api/v1/agent/suite")
+async def agent_fetch_suite():
+    """Simulate fetching a new resiliency test suite."""
     await h.maybe_delay()
     failure = await h.maybe_fail()
-    plan = h.get_resiliency_plan()
-    return failure or JSONResponse(plan)
+    suite = h.get_resiliency_suite()
+    return failure or JSONResponse(suite)
 
 
-@app.post("/api/v1/agent/plan/ack")
-async def agent_acknowledge_plan(request: Request):
-    """Simulate acknowledging a resiliency plan."""
+@app.post("/api/v1/agent/suite/ack")
+async def agent_acknowledge_suite(request: Request):
+    """Simulate acknowledging a resiliency suite."""
     await h.maybe_delay()
     failure = await h.maybe_fail()
     return failure or JSONResponse({"status": "ok"})
 
 
-@app.get("/api/v1/agent/plan/{plan_id}/experiment/{exp_id}")
-async def agent_fetch_experiment(plan_id: int, exp_id: int):
-    """Simulate fetching a new resiliency plan step."""
+@app.get("/api/v1/agent/suite/{suite_id}/scenario/{scenario_id}")
+async def agent_fetch_scenario(suite_id: int, scenario_id: int):
+    """Simulate fetching a new resiliency scenario from a given suite."""
     await h.maybe_delay()
     failure = await h.maybe_fail()
-    exp = h.get_experiment()
-    exp["id"] = exp_id
-    return failure or JSONResponse(exp)
+    scenario = h.get_scenario()
+    scenario["id"] = scenario_id
+    return failure or JSONResponse(scenario)

@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict
 
 from agent.schemas.event import AgentEventEnum
-from agent.schemas.resiliency import ResiliencyPlan
+from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +28,13 @@ class EventHandler:
     """
 
     @staticmethod
-    def publish(plan: ResiliencyPlan, name: AgentEventEnum, payload: Dict[Any, Any]):
+    def publish(suite: ResiliencySuite, name: AgentEventEnum, payload: Dict[Any, Any]):
         logger.info(
             name.value,
             extra={
                 "event_name": name.value,
-                "plan_id": plan.id,
-                "run_id": plan.run_id,
+                "suite_id": suite.id,
+                "run_id": suite.run_id,
                 **payload,
             },
         )
