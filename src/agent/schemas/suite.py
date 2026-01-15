@@ -25,10 +25,6 @@ class ResiliencySuite(BaseModel):
     id: int = Field(..., description="Unique identifier of the suite.")
     run_id: int = Field(..., description="Identifier of the current execution run.")
     title: str = Field(..., description="Human-readable title of the suite.")
-    available: bool = Field(
-        default=False,
-        description="Whether the suite is currently available for execution.",
-    )
     tags: List[str] = Field(
         default_factory=list, description="Tags associated with the suite."
     )

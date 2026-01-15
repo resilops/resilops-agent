@@ -3,10 +3,7 @@ MAX_DELAY = 2.0  # Maximum artificial delay in seconds
 RESILIENCY_SUITE_EMPTY_RATE = 0.5  # 50 % of times suite is empty
 
 
-RESILIENCY_EMPTY_SUITE = {
-    "available": False,
-    "title": "No suite available at the moment",
-}
+RESILIENCY_EMPTY_SUITE = {}
 
 RESILIENCY_SUITE = {
     "id": 123,

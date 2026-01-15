@@ -71,9 +71,9 @@ class ResiliencySuiteSchedulerWorker(PeriodicWorker):
             Context dictionary containing the fetched suite,
             or None if no suite was returned.
         """
-        suite: ResiliencySuite = await self.client.fetch_plan()
+        suite: Optional[ResiliencySuite] = await self.client.fetch_suite()
 
-        if suite and suite.available:
+        if suite:
             await self.client.ack_suite(suite.id)
 
         return {"suite": suite}
@@ -85,9 +85,9 @@ class ResiliencySuiteSchedulerWorker(PeriodicWorker):
         Args:
             context: Context dictionary containing the fetched suite.
         """
-        suite: ResiliencySuite = context.get("suite")
+        suite: Optional[ResiliencySuite] = context.get("suite")
 
-        if not suite or not suite.available:
+        if not suite:
             return
 
         self.state_handler.runner.enqueue(suite)

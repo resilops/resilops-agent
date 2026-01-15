@@ -1,5 +1,5 @@
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from agent.clients.base import BaseAPIClient
 from agent.schemas.heartbeat import HeartbeatResponseModel
@@ -40,7 +40,7 @@ class ControlPlaneClient(BaseAPIClient):
         response: Dict = await self.request("GET", "/api/v1/agent/heartbeat")
         return HeartbeatResponseModel(**response)
 
-    async def fetch_suite(self) -> ResiliencySuite:
+    async def fetch_suite(self) -> Optional[ResiliencySuite]:
         """
         Fetch the next resiliency suite from the control plane.
 
@@ -50,6 +50,8 @@ class ControlPlaneClient(BaseAPIClient):
         """
         logger.debug("Fetching resiliency suite from control plane")
         response: Dict = await self.request("GET", "/api/v1/agent/suite")
+        if not response:
+            return
         return ResiliencySuite(**response)
 
     async def ack_suite(self, suite_id: int) -> None:
