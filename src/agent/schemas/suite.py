@@ -57,31 +57,17 @@ class ActionSpec(CallableSpec):
 class ObserverSpec(CallableSpec):
     """Specification for an observer that monitors system behavior."""
 
+    sampling_interval: Optional[int] = Field(
+        ..., description="Interval between observer samples in seconds."
+    )
+    warmup_period: Optional[int] = Field(
+        ..., description="Observer warmup period in seconds"
+    )
+    grace_period: Optional[int] = Field(..., description="Grace period in seconds")
+
 
 class RollbackSpec(CallableSpec):
     """Specification for rollback logic used to restore system state."""
-
-
-class LifecyclePhaseSpec(BaseModel):
-    """Optional hooks before/after a phase."""
-
-    before: Optional[CallableSpec] = Field(
-        default=None, description="Hook executed before the phase starts."
-    )
-    after: Optional[CallableSpec] = Field(
-        default=None, description="Hook executed after the phase completes."
-    )
-
-
-class ScenarioLifecycleSpec(BaseModel):
-    """Lifecycle hooks for different phases of a scenario."""
-
-    action: Optional[LifecyclePhaseSpec] = Field(
-        default=None, description="Lifecycle hooks around action execution."
-    )
-    rollback: Optional[LifecyclePhaseSpec] = Field(
-        default=None, description="Lifecycle hooks around rollback execution."
-    )
 
 
 class ResiliencyScenario(BaseModel):
@@ -100,8 +86,4 @@ class ResiliencyScenario(BaseModel):
     )
     rollback: Optional[RollbackSpec] = Field(
         default=None, description="Optional rollback logic to restore system state."
-    )
-    lifecycle: Optional[ScenarioLifecycleSpec] = Field(
-        default=None,
-        description="Optional lifecycle hooks for action and rollback phases.",
     )

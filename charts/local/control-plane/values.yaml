@@ -1,0 +1,78 @@
+namespace: resiltyio
+nameOverride: resilience-agent-cp
+fullnameOverride: "Resilience Agent Control Plane"
+
+workload:
+  type: deployment
+
+serviceAccount:
+  create: true
+  name: resilience-agent-cp-sa
+
+image:
+  repository: resilience-agent-cp
+  tag: local
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: false
+
+livenessProbe:
+  httpGet:
+    path: /api/health/live
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /api/health/ready
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+
+environment_variable:
+  enabled: true
+  data:
+    ENV: local
+
+migration:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 300m       # 100m per worker
+    memory: 512Mi   # ~150-170Mi per worker + base
+  limits:
+    cpu: 750m       # 250m per worker (burstable)
+    memory: 1Gi     # Some headroom for spikes
+
+
+wsgiConfig:
+  enabled: false
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+
+rbac:
+  enabled: false
+
+containerCommand:
+  - "uvicorn"
+  - "server.app:app"
+  - "--host"
+  - "0.0.0.0"
+  - "--port"
+  - "8000"

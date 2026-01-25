@@ -5,20 +5,35 @@ help:
 	@echo "Available commands:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9._-]+:.*?## / {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
+chart: ## Build local kubernetes charts
+	helm secrets template resilience-agent ../helm-charts/app -f ./charts/local/agent/values.yaml -f ./charts/local/secrets.enc.yaml
+	helm secrets template control-plane ../helm-charts/app -f ./charts/local/control-plane/values.yaml
 
-build: ## Build docker containers
+build: ## Build local docker containers
+	eval $(minikube docker-env)
+	rsync -av --exclude='pyenv' ../resilience-lib/ ./local-libs/resilience-lib
 	@echo "🐳 Building Docker containers"
-	docker-compose build
+	docker build -f ./docker/AgentDockerfile --target local -t resilience-agent:local .
+	docker build -f ./docker/MockserverDockerfile -t resilience-agent-cp:local .
 
-up: ## Run all the docker containers
-	docker-compose up -d
-	$(MAKE) logs
+up: ## Deploy local charts
+	@echo "🚀 Deploying Resilience Agent Control Plane Locally"
+	helm secrets upgrade --install resilience-agent-cp ../helm-charts/app \
+		-n resiltyio \
+		-f ./charts/local/control-plane/values.yaml \
+		--create-namespace --force
 
-down: ## Stop all the docker containers
-	docker-compose down
+	@echo "🚀 Deploying Resilience Agent Locally"
+	helm secrets upgrade --install resilience-agent ../helm-charts/app \
+		-n resiltyio \
+		-f ./charts/local/secrets.enc.yaml \
+		-f ./charts/local/agent/values.yaml --force
 
-restart: ## Restart all the docker containers
-	docker-compose restart
+down: ## Remove all the deployments
+	helm uninstall -n resiltyio resilience-agent resilience-agent-cp
 
-logs: ## Follow all container logs
-	docker-compose logs -f
+forward: ## Port forward control plane to localhost
+	kubectl port-forward svc/resilience-agent-cp 8000:8000
+
+logs: ## Log stream of agent
+	kubectl logs -f $$(kubectl get pod -n resiltyio -l app.kubernetes.io/name=resilience-agent -o jsonpath='{.items[0].metadata.name}')

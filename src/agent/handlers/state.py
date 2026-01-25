@@ -83,6 +83,5 @@ class AgentStateHandler:
 
     def __init__(self) -> None:
         state = AgentRuntimeState()
-
         self.agent = AgentRuntimeStateHandler(state)
         self.runner = ResiliencySuiteRuntimeStateHandler(state.runner)

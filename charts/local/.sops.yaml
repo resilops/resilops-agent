@@ -1,0 +1,3 @@
+creation_rules:
+  - encrypted_regex: '.*'
+    pgp: A9ACD1E4BCCD808F0937E18920CBCEBF0DE0870C

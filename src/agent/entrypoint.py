@@ -56,7 +56,9 @@ async def main() -> None:
             config=config,
             state_handler=state_handler,
             event_handler=event_handler,
-            runner=ResiliencySuiteRunner(client=control_plane_client),
+            runner=ResiliencySuiteRunner(
+                client=control_plane_client, event_handler=event_handler
+            ),
             shutdown_event=shutdown_event,
         ),
     ]

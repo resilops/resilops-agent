@@ -5,10 +5,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class AgentConfigModel(BaseSettings):
     """
     Configuration for the resiliency-agent.
-    Environment variables are prefixed with `RESILTY_RESILIENCE_AGENT_`.
+    Environment variables are prefixed with `RESILTY_AGENT_`.
     """
 
-    model_config = SettingsConfigDict(env_prefix="RESILTY_RESILIENCE_AGENT_")
+    model_config = SettingsConfigDict(env_prefix="RESILTY_AGENT_")
 
     # API Credentials
     api_key_id: str = Field(
@@ -20,21 +20,18 @@ class AgentConfigModel(BaseSettings):
 
     # Control plane hosts
     control_plane_api_host: str = Field(
-        "http://controlplane:8000",
-        description="Base URL for the control plane API",
+        ..., description="Base URL for the control plane API"
     )
 
     # Task intervals (in seconds)
     heartbeat_interval: int = Field(
-        3, description="Interval between heartbeat signals to the control plane"
+        5, ge=5, description="Interval between heartbeat signals to the control plane"
     )
     runner_interval: int = Field(
-        2, description="Interval for executing queued resiliency suites"
+        5, ge=5, description="Interval for executing queued resiliency suites"
     )
     resiliency_suite_poll_interval: int = Field(
-        2,
+        5,
+        ge=5,
         description="Interval for polling the control plane for new resiliency suites",
-    )
-    event_publish_interval: int = Field(
-        5, description="Interval for publishing the event"
     )

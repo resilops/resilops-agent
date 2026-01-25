@@ -39,14 +39,14 @@ def setup_logging() -> None:
                 "level": log_level,
                 "propagate": False,
             },
-            "chaostoolkit": {
-                "handlers": ["console"],
-                "level": "WARNING",  # Only warnings or errors from CT
-                "propagate": False,
-            },
             "agent": {
                 "handlers": ["console"],
                 "level": log_level,
+                "propagate": False,
+            },
+            "httpx": {
+                "handlers": ["console"],
+                "level": "WARNING",  # silence INFO request logs
                 "propagate": False,
             },
         },

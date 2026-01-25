@@ -7,11 +7,11 @@ class APIRequestError(Exception):
     def __init__(
         self,
         message: str,
-        status: Optional[int] = None,
+        status_code: Optional[int] = None,
         context: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(message)
-        self.status = status
+        self.status_code = status_code
         self.context = context or {}
 
 

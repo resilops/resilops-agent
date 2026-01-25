@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Any, Dict, Optional
 
-import aiohttp
+import httpx
 
 from agent import helper as h
 from agent.exceptions import APIRequestError
@@ -13,36 +13,43 @@ logger = logging.getLogger(__name__)
 
 class BaseAPIClient:
     """
-    Base class for asynchronous HTTP clients communicating with the any clients.
+    Base class for asynchronous HTTP clients.
 
-    Features:
-    - Automatic retries for network errors and 5xx HTTP responses
-    - Raises APIRequestError on non-successful responses
-    - Supports configurable retry count, delay, and request timeout
+    This class provides:
+        - Asynchronous HTTP requests using `httpx.AsyncClient`.
+        - Automatic retries on network errors and 5xx HTTP responses.
+        - Raises `APIRequestError` on non-successful responses.
+        - Configurable retry count, delay, and request timeout.
 
-    Subclasses must define the `host` property.
+    Subclasses must implement the `host` property to define
+    the base URL for the API.
+
+    Attributes:
+        MAX_RETRIES (int): Maximum number of retry attempts (default: 3)
+        RETRY_DELAY (float): Delay between retries in seconds (default: 1)
+        REQUEST_TIMEOUT (float): Timeout for a single request in seconds (default: 3)
     """
 
     MAX_RETRIES: int = 3
-    RETRY_DELAY: float = 1  # seconds
-    REQUEST_TIMEOUT: float = 3  # seconds
+    RETRY_DELAY: float = 1.0
+    REQUEST_TIMEOUT: float = 3.0
 
     def __init__(self, config: AgentConfigModel) -> None:
         """
-        Initialize the API client with configuration.
+        Initialize the API client with agent configuration.
 
         Args:
-            config: Agent configuration containing API credentials and host info.
+            config (AgentConfigModel): Agent configuration containing API keys.
         """
         self.config = config
 
     @property
     def headers(self) -> Dict[str, str]:
         """
-        Return HTTP headers for requests, including authorization.
+        Return HTTP headers including authorization keys.
 
         Returns:
-            Dictionary of headers.
+            dict: HTTP headers with 'Content-Type' and API keys.
         """
         return {
             "Content-Type": "application/json",
@@ -53,90 +60,83 @@ class BaseAPIClient:
     @property
     def host(self) -> str:
         """
-        Base host URL for the API. Must be implemented by subclasses.
+        Base host URL for the API.
 
         Raises:
-            NotImplementedError: if subclass does not define host.
+            NotImplementedError: Must be implemented by subclass.
         """
         raise NotImplementedError("Subclasses must define `host` property")
 
     async def _request(
-        self,
-        method: str,
-        url: str,
-        json: Optional[Dict[str, Any]] = None,
+        self, method: str, url: str, json: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Execute a single HTTP request without retries.
 
         Args:
-            method: HTTP method, e.g., 'GET', 'POST'.
-            url: Full URL of the request.
-            json: Optional JSON body for POST/PUT requests.
+            method (str): HTTP method (GET, POST, PUT, DELETE).
+            url (str): Full request URL.
+            json (Optional[dict]): JSON payload for request body.
 
         Returns:
-            Parsed JSON response.
+            dict: Parsed JSON response.
 
         Raises:
-            APIRequestError: for non-success HTTP responses.
-            aiohttp.ClientError: for network errors.
+            APIRequestError: If HTTP response is 4xx/5xx.
+            httpx.RequestError: For network-related errors.
         """
-        timeout = aiohttp.ClientTimeout(total=self.REQUEST_TIMEOUT)
-        async with aiohttp.ClientSession(
-            headers=self.headers, timeout=timeout
-        ) as session:
-            async with session.request(method, url, json=json) as resp:
-                await h.raise_for_status(resp)
-                return await resp.json()
+        timeout = httpx.Timeout(self.REQUEST_TIMEOUT)
+        async with httpx.AsyncClient(headers=self.headers, timeout=timeout) as client:
+            try:
+                response = await client.request(method, url, json=json)
+                response.raise_for_status()
+                return response.json()
+            except httpx.HTTPStatusError as exc:
+                raise APIRequestError(
+                    f"HTTP {exc.response.status_code} error for {url}",
+                    status_code=exc.response.status_code,
+                    context={"response": exc.response.text},
+                ) from exc
 
     async def request(
         self, method: str, path: str, json: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Execute an HTTP request with retry logic.
-
-        Retries are attempted for:
-        - Network errors (aiohttp.ClientError)
-        - 5xx HTTP responses (via APIRequestError)
+        Execute an HTTP request with automatic retries for network
+        errors and 5xx HTTP responses.
 
         Args:
-            method: HTTP method, e.g., 'GET', 'POST'.
-            path: API path, appended to the host.
-            json: Optional JSON body for POST/PUT requests.
+            method (str): HTTP method.
+            path (str): API path (appended to host).
+            json (Optional[dict]): JSON payload for request.
 
         Returns:
-            Parsed JSON response.
+            dict: Parsed JSON response.
 
         Raises:
-            APIRequestError: if all retry attempts fail or a non-retriable status is
-            returned.
+            APIRequestError: If max retries exceeded or non-retriable
+            error occurs.
         """
         url = h.url(self.host, path)
+
         for attempt in range(1, self.MAX_RETRIES + 1):
             try:
                 return await self._request(method=method, url=url, json=json)
-            except (APIRequestError, aiohttp.ClientError) as exc:
-                status = getattr(exc, "status", None)
-                # Stop retrying if max attempts reached or non-retriable status
-                if (
-                    attempt >= self.MAX_RETRIES
-                    or status in h.non_retriable_status_codes()
-                ):
-                    logger.error(
-                        "Request failed (attempt %d/%d) to %s: %s",
-                        attempt,
-                        self.MAX_RETRIES,
-                        url,
-                        exc,
-                    )
+
+            except (httpx.RequestError, APIRequestError) as exc:
+                # Stop retrying if non-retriable or max attempts reached
+                if attempt >= self.MAX_RETRIES:
                     raise
 
-                logger.warning(
-                    "Request failed (attempt %d/%d) to %s, retrying in %.1fs: %s",
-                    attempt,
-                    self.MAX_RETRIES,
-                    url,
-                    self.RETRY_DELAY,
-                    exc,
-                )
-                await asyncio.sleep(self.RETRY_DELAY)
+                status_code = getattr(exc, "status_code", None)
+                if status_code and status_code in h.non_retriable_status_codes():
+                    raise
+
+            logger.warning(
+                "Request attempt %d/%d to %s failed, retrying in %.1fs",
+                attempt,
+                self.MAX_RETRIES,
+                url,
+                self.RETRY_DELAY,
+            )
+            await asyncio.sleep(self.RETRY_DELAY)

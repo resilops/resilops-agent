@@ -7,7 +7,7 @@ from agent.handlers.event import EventHandler
 from agent.handlers.runner import ResiliencySuiteRunner
 from agent.handlers.state import AgentStateHandler
 from agent.schemas.config import AgentConfigModel
-from agent.schemas.event import AgentEventEnum
+from agent.schemas.event import AgentEventEnum, AgentEventPayload
 from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
@@ -77,9 +77,12 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         suite: ResiliencySuite = self.state_handler.runner.current_suite
         self.state_handler.runner.mark_running()
         self.event_handler.publish(
-            suite=suite,
-            name=AgentEventEnum.SUITE_EXECUTING,
-            payload={"details": "Suite executing"},
+            event=AgentEventPayload(
+                event_name=AgentEventEnum.SUITE_EXECUTING,
+                suite_id=suite.id,
+                run_id=suite.run_id,
+                details="Suite executing",
+            )
         )
         await self.runner.run(suite)
         return {"suite": suite}
@@ -97,9 +100,12 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         suite: ResiliencySuite = context.get("suite")
         self.state_handler.runner.mark_idle()
         self.event_handler.publish(
-            suite=suite,
-            name=AgentEventEnum.SUITE_EXECUTION_SUCCESS,
-            payload={"details": "Suite executed successfully."},
+            event=AgentEventPayload(
+                event_name=AgentEventEnum.SUITE_EXECUTION_SUCCESS,
+                suite_id=suite.id,
+                run_id=suite.run_id,
+                details="Suite executed successfully.",
+            )
         )
 
     async def on_execution_error(
@@ -120,7 +126,12 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         self.state_handler.runner.mark_idle()
 
         self.event_handler.publish(
-            suite=suite,
-            name=AgentEventEnum.SUITE_EXECUTION_FAILED,
-            payload={"details": "Resiliency suite execution failed.", "message": err},
+            event=AgentEventPayload(
+                event_name=AgentEventEnum.SUITE_EXECUTION_SUCCESS,
+                suite_id=suite.id,
+                run_id=suite.run_id,
+                is_error=True,
+                error_msg=err,
+                details="Resiliency suite execution failed.",
+            )
         )

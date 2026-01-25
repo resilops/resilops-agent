@@ -72,3 +72,4 @@ uploads
 terraform.rc
 secrets.yaml
 gpg_private.key
+local-libs

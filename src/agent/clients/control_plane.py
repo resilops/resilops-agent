@@ -50,9 +50,7 @@ class ControlPlaneClient(BaseAPIClient):
         """
         logger.debug("Fetching resiliency suite from control plane")
         response: Dict = await self.request("GET", "/api/v1/agent/suite")
-        if not response:
-            return
-        return ResiliencySuite(**response)
+        return ResiliencySuite(**response) if response else None
 
     async def ack_suite(self, suite_id: int) -> None:
         """Acknowledge that a resiliency suite has been received."""

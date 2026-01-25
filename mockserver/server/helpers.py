@@ -1,6 +1,6 @@
 import asyncio
 import random
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from fastapi import status
 from fastapi.responses import JSONResponse
@@ -31,17 +31,3 @@ async def maybe_fail(
 async def maybe_delay() -> None:
     """Introduce a random delay to simulate network latency."""
     await asyncio.sleep(random.uniform(0, constants.MAX_DELAY))
-
-
-def get_resiliency_suite() -> Dict:
-    """Returns a respective resiliency suite"""
-    return (
-        constants.RESILIENCY_SUITE
-        if random.random() > constants.RESILIENCY_SUITE_EMPTY_RATE
-        else constants.RESILIENCY_EMPTY_SUITE
-    )
-
-
-def get_scenario() -> Dict:
-    """Returns a respective resiliency scenario"""
-    return constants.RESILIENCY_SCENARIO

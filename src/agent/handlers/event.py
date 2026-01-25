@@ -1,40 +1,34 @@
 import logging
-from typing import Any, Dict
 
-from agent.schemas.event import AgentEventEnum
-from agent.schemas.suite import ResiliencySuite
+from reslib.schemas.event import ResLibEventPayload
+
+from agent.schemas.event import AgentEventPayload
 
 logger = logging.getLogger(__name__)
 
 
 class EventHandler:
     """
-    Emits agent lifecycle and chaos execution events as structured logs.
+    Emits agent lifecycle and test execution events as structured logs.
+
+    Each log entry represents a single, immutable event. Logs are JSON-formatted
+    and intended to be parsed by Fluent Bit, which forwards them to the control plane.
 
     Notes:
-        - Events are logged using the configured JSON logger.
-        - Each log entry represents a single immutable event.
-        - Fluent Bit is responsible for parsing these logs as JSON
-          and forwarding them to the control plane.
-        - Events are at-most-once and are not retried by the agent.
-
-    Usage:
-        - `event_name` represents the event type (e.g. EXECUTION_STARTED).
-        - `data` contains event-specific metadata (execution_id, activity, etc).
-
-    Important:
+        - Events are logged at-most-once; the agent does not retry them.
         - This is event-level logging, not debug logging.
         - Do not log full tracebacks or Chaos Toolkit journals here.
+
+    Usage:
+        EventHandler.publish(event)
+
+        Args:
+            event (AgentEventPayload | ResLibAgentEventPayload): The event to emit.
+                - `event_name` represents the type (e.g., EXECUTION_STARTED)
+                - `data` contains event-specific metadata (execution_id, activity, etc.)
     """
 
     @staticmethod
-    def publish(suite: ResiliencySuite, name: AgentEventEnum, payload: Dict[Any, Any]):
-        logger.info(
-            name.value,
-            extra={
-                "event_name": name.value,
-                "suite_id": suite.id,
-                "run_id": suite.run_id,
-                **payload,
-            },
-        )
+    def publish(event: AgentEventPayload | ResLibEventPayload):
+        """Emits agent lifecycle and test execution events as structured logs."""
+        logger.info(event.event_name.value, extra=event.model_dump())

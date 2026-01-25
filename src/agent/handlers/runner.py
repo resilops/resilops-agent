@@ -1,38 +1,84 @@
 import logging
 
+from reslib.helpers import BaseEventRecorder
+from reslib.runtime.scenario import execute_resilience_scenario
+from reslib.schemas.event import ResLibAgentEventPayload
+
 from agent.clients.control_plane import ControlPlaneClient
 from agent.exceptions import ResiliencySuiteExecutionError
-from agent.schemas.suite import ResiliencyScenario, ResiliencySuite
+from agent.handlers.event import EventHandler
+from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
 
 
+class ResLibEventRecorder(BaseEventRecorder):
+    """Bridges reslib events to the agent event handler."""
+
+    def __init__(
+        self,
+        suite: ResiliencySuite,
+        scenario_id: int,
+        event_handler: EventHandler,
+    ) -> None:
+        self.suite = suite
+        self.scenario_id = scenario_id
+        self.event_handler = event_handler
+
+    def record(self, *, event: ResLibAgentEventPayload) -> None:
+        """Forward library events to the agent event handler."""
+        event.suite_id = self.suite.id
+        event.run_id = self.suite.run_id
+        event.scenario_id = self.scenario_id
+        self.event_handler.publish(event=event)
+
+
 class ResiliencySuiteRunner:
     """
-    Executes scenarios sequentially and emits execution events.
+    Executes resiliency scenarios sequentially and emits execution events.
 
     Responsibilities:
-        - Fetch scenarios from control plane
-        - Execute suite (one-shot)
-        - Stop execution on failure if configured
+        - Fetch scenarios from the control plane
+        - Execute scenarios as a one-shot suite
+        - Surface execution failures with context
     """
 
-    def __init__(self, client: ControlPlaneClient) -> None:
+    def __init__(
+        self,
+        client: ControlPlaneClient,
+        event_handler: EventHandler,
+    ) -> None:
         self.client = client
+        self.event_handler = event_handler
 
     async def run(self, suite: ResiliencySuite) -> None:
         """
-        Raises exception if any of the scenario execution failed
-        or some api error
+        Execute all scenarios in a suite sequentially.
+
+        Raises:
+            ResiliencySuiteExecutionError: if scenario execution or fetching fails.
         """
         try:
             for scenario_id in suite.scenarios:
-                _: ResiliencyScenario = await self.client.fetch_scenario(
-                    suite_id=suite.id, scenario_id=scenario_id
+                scenario = await self.client.fetch_scenario(
+                    suite_id=suite.id,
+                    scenario_id=scenario_id,
                 )
-        except Exception as e:
-            logger.exception("Unhandled error while executing suite %s", suite.id)
+
+                await execute_resilience_scenario(
+                    action=scenario.action.model_dump(),
+                    observer=scenario.observer.model_dump(),
+                    guardrail=scenario.guardrail.model_dump(),
+                    rollback=scenario.rollback.model_dump(),
+                    event_recorder=ResLibEventRecorder(
+                        suite=suite,
+                        scenario_id=scenario.id,
+                        event_handler=self.event_handler,
+                    ),
+                )
+
+        except Exception as exc:
             raise ResiliencySuiteExecutionError(
                 "Suite execution failed",
-                context={"suite": suite, "message": str(e)},
-            )
+                context={"suite_id": suite.id, "error": str(exc)},
+            ) from exc

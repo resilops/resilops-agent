@@ -1,40 +1,82 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from server import helpers as h
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, status
+from server.constants import ResiliencySuite, ResiliencySuiteStatusEnum
 
 app = FastAPI(title="Control Plane API")
+
+current_suite: Optional[ResiliencySuite] = None
+
+
+# -------------------------------------------------------------------
+# Health
+# -------------------------------------------------------------------
+
+
+@app.get("/api/health/live")
+async def health_live():
+    """Health live endpoint"""
+    return {"status": "ok"}
+
+
+@app.get("/api/health/ready")
+async def health_ready():
+    """Health ready endpoint"""
+    return {"status": "ok"}
+
+
+# -------------------------------------------------------------------
+# Agent APIs
+# -------------------------------------------------------------------
 
 
 @app.get("/api/v1/agent/heartbeat")
 async def agent_heartbeat():
     """Simulate heartbeat endpoint."""
-    await h.maybe_delay()
-    failure = await h.maybe_fail()
-    return failure or JSONResponse({"status": "ok"})
+    return {"status": "ok"}
 
 
 @app.get("/api/v1/agent/suite")
 async def agent_fetch_suite():
-    """Simulate fetching a new resiliency test suite."""
-    await h.maybe_delay()
-    failure = await h.maybe_fail()
-    suite = h.get_resiliency_suite()
-    return failure or JSONResponse(suite)
+    """Fetch a queued resiliency test suite."""
+    if current_suite is None or current_suite.state != ResiliencySuiteStatusEnum.QUEUED:
+        return {}
+
+    return current_suite.suite
 
 
 @app.post("/api/v1/agent/suite/ack")
-async def agent_acknowledge_suite(request: Request):
-    """Simulate acknowledging a resiliency suite."""
-    await h.maybe_delay()
-    failure = await h.maybe_fail()
-    return failure or JSONResponse({"status": "ok"})
+async def agent_acknowledge_suite():
+    """Acknowledge and mark suite as processed."""
+    if current_suite is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No suite queued",
+        )
+
+    current_suite.state = ResiliencySuiteStatusEnum.PROCESSED
+    return {"status": "ok"}
 
 
 @app.get("/api/v1/agent/suite/{suite_id}/scenario/{scenario_id}")
 async def agent_fetch_scenario(suite_id: int, scenario_id: int):
-    """Simulate fetching a new resiliency scenario from a given suite."""
-    await h.maybe_delay()
-    failure = await h.maybe_fail()
-    scenario = h.get_scenario()
-    scenario["id"] = scenario_id
-    return failure or JSONResponse(scenario)
+    """Fetch a resiliency scenario from a suite."""
+    if current_suite is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active suite",
+        )
+    return current_suite.scenarios[0]
+
+
+# -------------------------------------------------------------------
+# Queue APIs
+# -------------------------------------------------------------------
+
+
+@app.post("/api/v1/queue/suite", status_code=status.HTTP_201_CREATED)
+async def queue_suite(suite: ResiliencySuite):
+    global current_suite
+    suite.state = ResiliencySuiteStatusEnum.QUEUED
+    current_suite = suite
+    return {"status": "queued"}

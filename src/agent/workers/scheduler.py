@@ -7,7 +7,7 @@ from agent.core.worker import PeriodicWorker
 from agent.handlers.event import EventHandler
 from agent.handlers.state import AgentStateHandler
 from agent.schemas.config import AgentConfigModel
-from agent.schemas.event import AgentEventEnum
+from agent.schemas.event import AgentEventEnum, AgentEventPayload
 from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
@@ -92,15 +92,19 @@ class ResiliencySuiteSchedulerWorker(PeriodicWorker):
 
         self.state_handler.runner.enqueue(suite)
         self.event_handler.publish(
-            suite=suite,
-            name=AgentEventEnum.SUITE_QUEUED,
-            payload={"details": "Resiliency suite queued for execution."},
+            event=AgentEventPayload(
+                event_name=AgentEventEnum.SUITE_QUEUED,
+                suite_id=suite.id,
+                run_id=suite.run_id,
+                details="Resiliency suite queued for execution.",
+            )
         )
 
     async def on_execution_error(
         self, context: Dict[str, Any], error: Exception
     ) -> None:
         """Handle errors during polling without enqueuing any suite."""
+
         logger.error(
             "Failed to poll resiliency suite from control plane",
             exc_info=error,
