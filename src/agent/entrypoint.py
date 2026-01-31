@@ -3,9 +3,9 @@ import asyncio
 from agent.clients.control_plane import ControlPlaneClient
 from agent.core.lifecycle import LifecycleManager
 from agent.core.manager import WorkerManager
-from agent.handlers.event import EventHandler
 from agent.handlers.runner import ResiliencySuiteRunner
 from agent.handlers.state import AgentStateHandler
+from agent.handlers.telemetry import AgentTelemetry
 from agent.logging import setup_logging
 from agent.schemas.config import AgentConfigModel
 from agent.workers.heartbeat import HealthMonitorWorker
@@ -34,30 +34,30 @@ async def main() -> None:
     state_handler = AgentStateHandler()
 
     # Initialise event handler
-    event_handler = EventHandler()
+    telemetry = AgentTelemetry()
 
     # Create background workers
     workers = [
         HealthMonitorWorker(
             config=config,
             state_handler=state_handler,
-            event_handler=event_handler,
+            telemetry=telemetry,
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
         ResiliencySuiteSchedulerWorker(
             config=config,
             state_handler=state_handler,
-            event_handler=event_handler,
+            telemetry=telemetry,
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
         ResiliencySuiteRunnerWorker(
             config=config,
             state_handler=state_handler,
-            event_handler=event_handler,
+            telemetry=telemetry,
             runner=ResiliencySuiteRunner(
-                client=control_plane_client, event_handler=event_handler
+                client=control_plane_client, telemetry=telemetry
             ),
             shutdown_event=shutdown_event,
         ),

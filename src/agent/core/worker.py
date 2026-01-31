@@ -2,8 +2,8 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
-from agent.handlers.event import EventHandler
 from agent.handlers.state import AgentStateHandler
+from agent.handlers.telemetry import AgentTelemetry
 from agent.schemas.config import AgentConfigModel
 
 
@@ -50,12 +50,12 @@ class PeriodicWorker(BaseWorker):
         self,
         config: AgentConfigModel,
         state_handler: AgentStateHandler,
-        event_handler: EventHandler,
+        telemetry: AgentTelemetry,
         shutdown_event: asyncio.Event,
     ):
         self.config = config
         self.state_handler = state_handler
-        self.event_handler = event_handler
+        self.telemetry = telemetry
         self.shutdown_event = shutdown_event
 
     async def _execute_safely(self) -> None:

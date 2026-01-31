@@ -44,6 +44,7 @@ environment_variable:
   enabled: true
   data:
     ENV: local
+    LOG_LEVEL: INFO
     RESILTY_AGENT_CONTROL_PLANE_API_HOST: http://resilience-agent-cp.resiltyio.svc.cluster.local:8000
 
 migration:
@@ -58,8 +59,8 @@ rbac:
   clusterRoleName: resiltio-clusterrole
   rules:
     - apiGroups: [""]
-      resources: ["pods", "configmaps", "secrets"]
-      verbs: ["get", "list", "watch"]
+      resources: ["pods"]
+      verbs: ["get", "list", "watch", "delete"]
 
     - apiGroups: ["apps"]
       resources: ["deployments", "statefulsets"]
@@ -67,6 +68,9 @@ rbac:
 
     - apiGroups: ["autoscaling"]
       resources: ["horizontalpodautoscalers"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["policy"]
+      resources: ["poddisruptionbudgets"]
       verbs: ["get", "list", "watch"]
   namespaces:
     - "nginx"

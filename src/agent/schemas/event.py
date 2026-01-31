@@ -4,20 +4,22 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class AgentEventEnum(str, Enum):
+class EventEnum(str, Enum):
     """All events enum"""
 
-    SUITE_QUEUED = "agent:suite:queued"
-    SUITE_EXECUTING = "agent:suite:executing"
-    SUITE_EXECUTION_SUCCESS = "agent:suite:execution:success"
-    SUITE_EXECUTION_FAILED = "agent:suite:execution:failed"
+    SUITE_QUEUED = "res:agent:event:suite:queued"
+    SUITE_EXECUTING = "res:agent:event:suite:executing"
+    SUITE_EXECUTION_SUCCESS = "res:agent:event:suite:execution:success"
+    SUITE_EXECUTION_FAILED = "res:agent:event:suite:execution:failed"
 
 
-class AgentEventPayload(BaseModel):
+class EventPayload(BaseModel):
     """Base event payload that allows arbitrary additional fields."""
 
     model_config = ConfigDict(extra="allow")
 
-    event_name: AgentEventEnum = Field(..., description="Name of the event.")
-    is_error: bool = Field(default=False, description="Is this event error related")
-    error_msg: Optional[str] = Field(default=None, description="Error message")
+    event_name: EventEnum = Field(..., description="Name of the event.")
+    type: str = Field(default="event", description="Event payload")
+    details: Optional[str] = Field(
+        default=None, description="Any details about the event"
+    )

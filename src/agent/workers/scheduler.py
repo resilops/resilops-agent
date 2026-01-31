@@ -4,10 +4,10 @@ from typing import Any, Dict, Optional
 
 from agent.clients.control_plane import ControlPlaneClient
 from agent.core.worker import PeriodicWorker
-from agent.handlers.event import EventHandler
 from agent.handlers.state import AgentStateHandler
+from agent.handlers.telemetry import AgentTelemetry
 from agent.schemas.config import AgentConfigModel
-from agent.schemas.event import AgentEventEnum, AgentEventPayload
+from agent.schemas.event import EventEnum, EventPayload
 from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class ResiliencySuiteSchedulerWorker(PeriodicWorker):
         self,
         config: AgentConfigModel,
         state_handler: AgentStateHandler,
-        event_handler: EventHandler,
+        telemetry: AgentTelemetry,
         shutdown_event: asyncio.Event,
         client: ControlPlaneClient,
     ) -> None:
@@ -37,11 +37,11 @@ class ResiliencySuiteSchedulerWorker(PeriodicWorker):
         Args:
             config: Agent configuration containing polling interval.
             state_handler: Internal state handler.
-            event_handler: Event handler.
+            telemetry: Telemetry handler.
             shutdown_event: Async event used to gracefully stop the worker loop.
             client: Control plane API client.
         """
-        super().__init__(config, state_handler, event_handler, shutdown_event)
+        super().__init__(config, state_handler, telemetry, shutdown_event)
         self.client = client
 
     @property
@@ -91,20 +91,19 @@ class ResiliencySuiteSchedulerWorker(PeriodicWorker):
             return
 
         self.state_handler.runner.enqueue(suite)
-        self.event_handler.publish(
-            event=AgentEventPayload(
-                event_name=AgentEventEnum.SUITE_QUEUED,
-                suite_id=suite.id,
-                run_id=suite.run_id,
+        self.telemetry.emit_event(
+            event=EventPayload(
+                event_name=EventEnum.SUITE_QUEUED,
                 details="Resiliency suite queued for execution.",
-            )
+            ),
+            suite_id=suite.id,
+            run_id=suite.run_id,
         )
 
     async def on_execution_error(
         self, context: Dict[str, Any], error: Exception
     ) -> None:
         """Handle errors during polling without enqueuing any suite."""
-
         logger.error(
             "Failed to poll resiliency suite from control plane",
             exc_info=error,

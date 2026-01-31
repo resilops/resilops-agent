@@ -4,8 +4,8 @@ from typing import Any, Dict, Optional
 
 from agent.clients.control_plane import ControlPlaneClient
 from agent.core.worker import PeriodicWorker
-from agent.handlers.event import EventHandler
 from agent.handlers.state import AgentStateHandler
+from agent.handlers.telemetry import AgentTelemetry
 from agent.schemas.config import AgentConfigModel
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class HealthMonitorWorker(PeriodicWorker):
         self,
         config: AgentConfigModel,
         state_handler: AgentStateHandler,
-        event_handler: EventHandler,
+        telemetry: AgentTelemetry,
         shutdown_event: asyncio.Event,
         client: ControlPlaneClient,
     ):
@@ -37,11 +37,11 @@ class HealthMonitorWorker(PeriodicWorker):
         Args:
             config: Agent configuration containing health report interval settings.
             state_handler: Internal state handler.
-            event_handler: Event handler.
+            telemetry: Telemetry handler.
             shutdown_event: Async event used to gracefully stop the worker loop.
             client: API client used to communicate with the control plane.
         """
-        super().__init__(config, state_handler, event_handler, shutdown_event)
+        super().__init__(config, state_handler, telemetry, shutdown_event)
         self.client = client
 
     @property

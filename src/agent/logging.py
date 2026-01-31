@@ -36,7 +36,7 @@ def setup_logging() -> None:
         "loggers": {
             "": {
                 "handlers": ["console"],
-                "level": log_level,
+                "level": "INFO",
                 "propagate": False,
             },
             "agent": {

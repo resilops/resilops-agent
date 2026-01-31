@@ -3,11 +3,11 @@ import logging
 from typing import Any, Dict, Optional
 
 from agent.core.worker import PeriodicWorker
-from agent.handlers.event import EventHandler
 from agent.handlers.runner import ResiliencySuiteRunner
 from agent.handlers.state import AgentStateHandler
+from agent.handlers.telemetry import AgentTelemetry
 from agent.schemas.config import AgentConfigModel
-from agent.schemas.event import AgentEventEnum, AgentEventPayload
+from agent.schemas.event import EventEnum, EventPayload
 from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         self,
         config: AgentConfigModel,
         state_handler: AgentStateHandler,
-        event_handler: EventHandler,
+        telemetry: AgentTelemetry,
         runner: ResiliencySuiteRunner,
         shutdown_event: asyncio.Event,
     ):
@@ -38,11 +38,11 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         Args:
             config: Agent configuration containing the executor interval.
             state_handler: Internal state handler.
-            event_handler: Event handler.
+            telemetry: Telemetry handler.
             runner: Resiliency suite runner.
             shutdown_event: Async event used to gracefully stop the worker loop.
         """
-        super().__init__(config, state_handler, event_handler, shutdown_event)
+        super().__init__(config, state_handler, telemetry, shutdown_event)
         self.runner = runner
 
     @property
@@ -76,13 +76,13 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         """
         suite: ResiliencySuite = self.state_handler.runner.current_suite
         self.state_handler.runner.mark_running()
-        self.event_handler.publish(
-            event=AgentEventPayload(
-                event_name=AgentEventEnum.SUITE_EXECUTING,
-                suite_id=suite.id,
-                run_id=suite.run_id,
+        self.telemetry.emit_event(
+            event=EventPayload(
+                event_name=EventEnum.SUITE_EXECUTING,
                 details="Suite executing",
-            )
+            ),
+            suite_id=suite.id,
+            run_id=suite.run_id,
         )
         await self.runner.run(suite)
         return {"suite": suite}
@@ -99,13 +99,13 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         """
         suite: ResiliencySuite = context.get("suite")
         self.state_handler.runner.mark_idle()
-        self.event_handler.publish(
-            event=AgentEventPayload(
-                event_name=AgentEventEnum.SUITE_EXECUTION_SUCCESS,
-                suite_id=suite.id,
-                run_id=suite.run_id,
+        self.telemetry.emit_event(
+            event=EventPayload(
+                event_name=EventEnum.SUITE_EXECUTION_SUCCESS,
                 details="Suite executed successfully.",
-            )
+            ),
+            suite_id=suite.id,
+            run_id=suite.run_id,
         )
 
     async def on_execution_error(
@@ -122,16 +122,13 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
             error: Exception raised during suite execution.
         """
         # Any error raised should have the context with suite and message
-        suite, err = context.get("suite"), context.get("message")
+        suite: ResiliencySuite = context.get("suite")
+        err: str = context.get("error")
         self.state_handler.runner.mark_idle()
-
-        self.event_handler.publish(
-            event=AgentEventPayload(
-                event_name=AgentEventEnum.SUITE_EXECUTION_SUCCESS,
-                suite_id=suite.id,
-                run_id=suite.run_id,
-                is_error=True,
-                error_msg=err,
-                details="Resiliency suite execution failed.",
-            )
+        self.telemetry.emit_event(
+            event=EventPayload(
+                event_name=EventEnum.SUITE_EXECUTION_FAILED, details=err
+            ),
+            suite_id=suite.id,
+            run_id=suite.run_id,
         )
