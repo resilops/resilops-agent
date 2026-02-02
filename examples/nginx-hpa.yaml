@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx:latest
+        image: resiltyio-nginx:local
         ports:
         - containerPort: 80
         livenessProbe:
@@ -68,4 +68,4 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 50
+        averageUtilization: 80

@@ -42,6 +42,8 @@ logs: ## Log stream of agent
 
 
 nginx-up: ## Deploy nginx with hpa
+	@echo "🐳 Building stress container"
+	docker build -f ./docker/NginxDockerfile -t resiltyio-nginx:local .
 	kubectl apply -f ./examples/nginx-hpa.yaml -n nginx
 
 nginx-down: ## Delete nginx deployment

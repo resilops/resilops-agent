@@ -36,8 +36,8 @@ class ResiliencySuiteRunner:
         Raises:
             ResiliencySuiteExecutionError: if scenario execution or fetching fails.
         """
-        try:
-            for scenario_id in suite.scenarios:
+        for scenario_id in suite.scenarios:
+            try:
                 scenario = await self.client.fetch_scenario(
                     suite_id=suite.id,
                     scenario_id=scenario_id,
@@ -55,9 +55,12 @@ class ResiliencySuiteRunner:
                         scenario_id=scenario_id,
                     ),
                 )
-
-        except Exception as exc:
-            raise ResiliencySuiteExecutionError(
-                "Suite execution failed",
-                context={"suite": suite, "error": str(exc)},
-            ) from exc
+            except Exception as exc:
+                raise ResiliencySuiteExecutionError(
+                    "Suite execution failed",
+                    context={
+                        "suite": suite,
+                        "error": str(exc),
+                        "scenario_id": scenario_id,
+                    },
+                ) from exc

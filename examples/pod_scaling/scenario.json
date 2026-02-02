@@ -22,9 +22,8 @@
                 "container": "nginx",
                 "metric_type": "Resource",
                 "resource": "cpu",
-                "idle_cpu_percent": 10,
-                "stress_cpu_percent": 90,
-                "min_idle": 1,
+                "idle_cpu_pct": 10,
+                "max_cpu_stress_pct_per_pod": 95,
                 "stress_duration": 120
             },
             "steps": [
@@ -47,9 +46,9 @@
             "observer": {
                 "name": "measure_http_latency",
                 "config": {
-                    "sampling_interval": 10,
-                    "warmup_period": 10,
-                    "grace_period": 10
+                    "sampling_interval": 5,
+                    "warmup_period": 5,
+                    "grace_period": 5
                 },
                 "kwargs": {
                     "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",

@@ -131,4 +131,5 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
             ),
             suite_id=suite.id,
             run_id=suite.run_id,
+            scenario_id=context.get("scenario_id"),
         )
