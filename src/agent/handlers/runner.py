@@ -1,6 +1,7 @@
 import logging
 
 from reslib.runtime.scenario import execute_resilience_scenario
+from reslib.schemas.scenario import ResiliencyScenario
 
 from agent.clients.control_plane import ControlPlaneClient
 from agent.exceptions import ResiliencySuiteExecutionError
@@ -41,12 +42,12 @@ class ResiliencySuiteRunner:
                     suite_id=suite.id,
                     scenario_id=scenario_id,
                 )
-
                 await execute_resilience_scenario(
-                    action=scenario.action.model_dump(),
-                    observer=scenario.observer.model_dump(),
-                    guardrail=scenario.guardrail.model_dump(),
-                    rollback=scenario.rollback.model_dump(),
+                    scenario=ResiliencyScenario(
+                        template=scenario.template,
+                        steps=[s.model_dump() for s in scenario.steps],
+                        observer=scenario.observer.model_dump(),
+                    ),
                     telemetry=ResLibTelemetryWithContext(
                         telemetry=AgentTelemetry(),
                         run_id=suite.run_id,

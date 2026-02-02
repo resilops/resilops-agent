@@ -1,0 +1,59 @@
+{
+    "suite": {
+        "id": 1,
+        "run_id": 2,
+        "title": "Resiliency Suite 1",
+        "tags": ["kubernetes"],
+        "execution": {
+            "mode": "series",
+            "stop_on_failure": "true"
+        },
+        "scenarios": [1]
+    },
+    "scenarios": [
+        {
+            "id": 1,
+            "suite_id": 1,
+            "title": "Do we remain available in face of pod going down?",
+            "description": "We expect Kubernetes to handle the situation gracefully when a pod goes down",
+            "template": {
+                "respect_pdb": "true",
+                "namespace": "nginx",
+                "workload": "nginx-deployment",
+                "quantity": 1,
+                "mode": "absolute",
+                "wait_for_stability": 30
+            },
+            "steps": [
+                {
+                    "type": "guardrail",
+                    "name": "validate_pod_termination_guardrail",
+                    "overrides": {}
+                },
+                {
+                    "type": "action",
+                    "name": "terminate_pods",
+                    "overrides": {}
+                },
+                {
+                    "type": "rollback",
+                    "name": "wait_for_workload_stability",
+                    "overrides": {}
+                }
+            ],
+            "observer": {
+                "name": "measure_http_latency",
+                "config": {
+                    "sampling_interval": 5,
+                    "warmup_period": 10,
+                    "grace_period": 10
+                },
+                "kwargs": {
+                    "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
+                    "namespace": "nginx",
+                    "workload": "nginx-deployment"
+                }
+            }
+        }
+    ]
+}

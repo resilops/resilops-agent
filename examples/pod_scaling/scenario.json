@@ -1,0 +1,62 @@
+{
+    "suite": {
+        "id": 1,
+        "run_id": 2,
+        "title": "Resiliency Suite 1",
+        "tags": ["kubernetes"],
+        "execution": {
+            "mode": "series",
+            "stop_on_failure": "true"
+        },
+        "scenarios": [1]
+    },
+    "scenarios": [
+        {
+            "id": 1,
+            "suite_id": 1,
+            "title": "Do the application scale according to the customer needs?",
+            "description": "We expect HPA is configured and kubernetes pods scale within a timeframe.",
+            "template": {
+                "namespace": "nginx",
+                "workload": "nginx-deployment",
+                "container": "nginx",
+                "metric_type": "Resource",
+                "resource": "cpu",
+                "idle_cpu_percent": 10,
+                "stress_cpu_percent": 90,
+                "min_idle": 1,
+                "stress_duration": 120
+            },
+            "steps": [
+                {
+                    "type": "guardrail",
+                    "name": "validate_hpa_cpu_scaling_guardrail",
+                    "overrides": {}
+                },
+                {
+                    "type": "action",
+                    "name": "stress_cpu_hpa",
+                    "overrides": {}
+                },
+                {
+                    "type": "rollback",
+                    "name": "wait_for_workload_stability",
+                    "overrides": {}
+                }
+            ],
+            "observer": {
+                "name": "measure_http_latency",
+                "config": {
+                    "sampling_interval": 10,
+                    "warmup_period": 10,
+                    "grace_period": 10
+                },
+                "kwargs": {
+                    "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
+                    "namespace": "nginx",
+                    "workload": "nginx-deployment"
+                }
+            }
+        }
+    ]
+}

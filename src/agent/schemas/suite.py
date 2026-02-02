@@ -37,53 +37,66 @@ class ResiliencySuite(BaseModel):
     )
 
 
-class CallableSpec(BaseModel):
-    """Base specification for a callable entity in resilience-lib."""
+class Step(BaseModel):
+    """
+    Represents a single step in a scenario: guardrail, action, or rollback.
 
+    `overrides` will be merged with the scenario template for this step.
+    """
+
+    type: str = Field(..., description="Step type")
     name: str = Field(..., description="Name of the callable in resilience-lib.")
+    overrides: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Step-specific overrides for the template fields.",
+    )
+
+
+class Observer(BaseModel):
+    """
+    Observer configuration for monitoring metrics during scenario execution.
+
+    - `config` contains timing-related parameters like sampling interval,
+      warmup period, and grace period.
+    - `kwargs` contains arguments passed to the observer callable.
+    """
+
+    name: str = Field(..., description="Name of the observer callable.")
+    config: Dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Observer-specific config like sampling_interval, "
+            "warmup_period, grace_period."
+        ),
+    )
     kwargs: Dict[str, Any] = Field(
-        default_factory=dict, description="Keyword arguments passed to the callable."
+        default_factory=dict, description="Arguments passed to the observer callable."
     )
-
-
-class GuardRailSpec(CallableSpec):
-    """Specification for a guardrail that enforces safety conditions."""
-
-
-class ActionSpec(CallableSpec):
-    """Specification for a resilience action (e.g., pod kill, node drain)."""
-
-
-class ObserverSpec(CallableSpec):
-    """Specification for an observer that monitors system behavior."""
-
-    sampling_interval: Optional[int] = Field(
-        ..., description="Interval between observer samples in seconds."
-    )
-    warmup_period: Optional[int] = Field(
-        ..., description="Observer warmup period in seconds"
-    )
-    grace_period: Optional[int] = Field(..., description="Grace period in seconds")
-
-
-class RollbackSpec(CallableSpec):
-    """Specification for rollback logic used to restore system state."""
 
 
 class ResiliencyScenario(BaseModel):
-    """Full scenario definition including execution, validation, and rollback."""
+    """
+    Full scenario definition including:
+
+    - `template`: shared arguments for all steps
+    - `steps`: ordered steps (guardrail, action, rollback)
+    - `observer`: passive monitoring
+    """
 
     id: int = Field(..., description="Unique identifier of the scenario.")
     suite_id: int = Field(..., description="Identifier of the parent suite.")
     title: str = Field(..., description="Human-readable scenario title.")
     description: str = Field(..., description="Description of what the scenario tests.")
-    guardrail: Optional[GuardRailSpec] = Field(
-        default=None, description="Optional guardrail executed before the action."
+    template: Dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "Scenario-specific template fields, merged into all steps. "
+            "Can be any kwargs depending on scenario type."
+        ),
     )
-    action: ActionSpec = Field(..., description="Fault injection or resilience action.")
-    observer: ObserverSpec = Field(
-        ..., description="Observer used to evaluate scenario outcome."
+    steps: List[Step] = Field(
+        ..., description="Ordered list of guardrail/action/rollback steps."
     )
-    rollback: Optional[RollbackSpec] = Field(
-        default=None, description="Optional rollback logic to restore system state."
+    observer: Observer = Field(
+        ..., description="Observer configuration to monitor system behavior."
     )

@@ -41,8 +41,8 @@ logs: ## Log stream of agent
 	kubectl logs -f $$(kubectl get pod -n resiltyio -l app.kubernetes.io/name=resilience-agent -o jsonpath='{.items[0].metadata.name}')
 
 
-up-nginx: ## Deploy nginx with hpa
+nginx-up: ## Deploy nginx with hpa
 	kubectl apply -f ./examples/nginx-hpa.yaml -n nginx
 
-down-nginx: ## Delete nginx deployment
+nginx-down: ## Delete nginx deployment
 	kubectl delete -f ./examples/nginx-hpa.yaml
