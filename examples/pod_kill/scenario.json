@@ -22,7 +22,8 @@
                 "workload": "nginx-deployment",
                 "quantity": 1,
                 "mode": "absolute",
-                "wait_for_stability": 30
+                "min_remaining_replicas": 1,
+                "wait_for_stability": 10
             },
             "steps": [
                 {
@@ -42,16 +43,18 @@
                 }
             ],
             "observer": {
-                "name": "measure_http_latency",
+                "name": "measure_endpoint_latency",
                 "config": {
                     "sampling_interval": 5,
-                    "warmup_period": 10,
-                    "grace_period": 10
+                    "warmup_period": 5,
+                    "grace_period": 5
                 },
                 "kwargs": {
                     "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
                     "namespace": "nginx",
-                    "workload": "nginx-deployment"
+                    "workload": "nginx-deployment",
+                    "requests_per_interval": 3,
+                    "timeout": 5
                 }
             }
         }

@@ -1,0 +1,14 @@
+kubectl patch deployment nginx-deployment -n nginx -p '{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [{
+          "name": "nginx",
+          "command": ["sh", "-c", "if [ \"$CRASH_ON_START\" = \"true\" ]; then exit 1; fi; nginx -g \"daemon off;\""]
+        }]
+      }
+    }
+  }
+}'
+
+kubectl set env deployment/nginx-deployment CRASH_ON_START=true -n nginx

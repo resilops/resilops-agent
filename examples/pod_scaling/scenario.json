@@ -19,12 +19,14 @@
             "template": {
                 "namespace": "nginx",
                 "workload": "nginx-deployment",
-                "container": "nginx",
+                "container_name": "nginx",
                 "metric_type": "Resource",
                 "resource": "cpu",
                 "idle_cpu_pct": 10,
+                "min_pods_idle_pct": 0,
                 "max_cpu_stress_pct_per_pod": 95,
-                "stress_duration": 120
+                "max_stress_duration": 300,
+                "wait_for_stability": 10
             },
             "steps": [
                 {
@@ -44,7 +46,7 @@
                 }
             ],
             "observer": {
-                "name": "measure_http_latency",
+                "name": "measure_endpoint_latency",
                 "config": {
                     "sampling_interval": 5,
                     "warmup_period": 5,
@@ -53,7 +55,9 @@
                 "kwargs": {
                     "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
                     "namespace": "nginx",
-                    "workload": "nginx-deployment"
+                    "workload": "nginx-deployment",
+                    "requests_per_interval": 3,
+                    "timeout": 5
                 }
             }
         }
