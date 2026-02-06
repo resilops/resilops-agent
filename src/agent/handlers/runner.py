@@ -56,6 +56,7 @@ class ResiliencySuiteRunner:
                     ),
                 )
             except Exception as exc:
+                logger.exception("Suite execution failed")
                 raise ResiliencySuiteExecutionError(
                     "Suite execution failed",
                     context={

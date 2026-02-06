@@ -20,13 +20,13 @@
                 "namespace": "nginx",
                 "workload": "nginx-deployment",
                 "container_name": "nginx",
-                "metric_type": "Resource",
-                "resource": "cpu",
+                "metric_source": "Resource",
+                "resource_type": "cpu",
                 "idle_cpu_pct": 10,
                 "min_pods_idle_pct": 0,
-                "max_cpu_stress_pct_per_pod": 95,
-                "max_stress_duration": 300,
-                "wait_for_stability": 10
+                "pod_cpu_stress_threshold_pct": 95,
+                "max_stress_duration_seconds": 300,
+                "hpa_scale_down_timeout_seconds": 700
             },
             "steps": [
                 {
@@ -41,23 +41,23 @@
                 },
                 {
                     "type": "rollback",
-                    "name": "wait_for_workload_stability",
+                    "name": "wait_until_hpa_scales_down",
                     "overrides": {}
                 }
             ],
             "observer": {
                 "name": "measure_endpoint_latency",
                 "config": {
-                    "sampling_interval": 5,
-                    "warmup_period": 5,
-                    "grace_period": 5
+                    "sampling_interval_seconds": 5,
+                    "warmup_period_seconds": 5,
+                    "grace_period_seconds": 5
                 },
                 "kwargs": {
                     "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
                     "namespace": "nginx",
                     "workload": "nginx-deployment",
                     "requests_per_interval": 3,
-                    "timeout": 5
+                    "http_request_timeout_seconds": 5
                 }
             }
         }

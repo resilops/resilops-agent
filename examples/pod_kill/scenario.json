@@ -23,7 +23,7 @@
                 "quantity": 1,
                 "mode": "absolute",
                 "min_remaining_replicas": 1,
-                "wait_for_stability": 10
+                "pod_respawn_timeout_seconds": 300
             },
             "steps": [
                 {
@@ -38,23 +38,23 @@
                 },
                 {
                     "type": "rollback",
-                    "name": "wait_for_workload_stability",
+                    "name": "wait_until_pod_respawn",
                     "overrides": {}
                 }
             ],
             "observer": {
                 "name": "measure_endpoint_latency",
                 "config": {
-                    "sampling_interval": 5,
-                    "warmup_period": 5,
-                    "grace_period": 5
+                    "sampling_interval_seconds": 5,
+                    "warmup_period_seconds": 5,
+                    "grace_period_seconds": 5
                 },
                 "kwargs": {
                     "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
                     "namespace": "nginx",
                     "workload": "nginx-deployment",
                     "requests_per_interval": 3,
-                    "timeout": 5
+                    "http_request_timeout_seconds": 5
                 }
             }
         }
