@@ -1,0 +1,171 @@
+namespace: resiltyio
+nameOverride: agent
+fullnameOverride: "Resilience Agent"
+
+workload:
+  type: daemonset
+
+serviceAccount:
+    create: true
+    name: agent-sa
+
+image:
+  repository: resilience-agent
+  tag: ""
+
+service:
+  enabled: false
+
+ingress:
+  enabled: false
+
+livenessProbe:
+  exec:
+    command:
+      - "sh"
+      - "-c"
+      - "pgrep -f 'resilience-agent' || exit 1"
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  exec:
+    command:
+      - "sh"
+      - "-c"
+      - "pgrep -f 'resilience-agent' || exit 1"
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+autoscaling:
+  enabled: false
+
+environment_variable:
+  enabled: true
+  data:
+    LOG_LEVEL: INFO
+
+migration:
+  enabled: false
+
+rbac:
+  enabled: true
+  clusterRoleName: resiltio-clusterrole
+  rules:
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["get", "list", "watch", "delete"]
+    - apiGroups: [""]
+      resources: ["pods/exec"]
+      verbs: ["get", "create"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "statefulsets"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["autoscaling"]
+      resources: ["horizontalpodautoscalers"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["policy"]
+      resources: ["poddisruptionbudgets"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["metrics.k8s.io"]
+      resources: ["pods"]
+      verbs: ["get", "list"]
+  namespaces:
+    - "nginx"
+
+sidecars:
+  containers:
+    - name: fluent-bit
+      image: fluent/fluent-bit:4.2
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+      volumeMounts:
+        - name: fluentbit-config
+          mountPath: /fluent-bit/etc
+        - name: logs
+          mountPath: /var/log/containers
+          readOnly: true
+      command:
+        - /fluent-bit/bin/fluent-bit
+        - -c
+        - /fluent-bit/etc/fluent-bit.conf
+
+fluentbit:
+  config:
+    service: |
+      [SERVICE]
+          Flush        5
+          Daemon       Off
+          Log_Level    info
+          Parsers_File parsers.conf
+
+    parsers: |
+      [PARSER]
+          Name        json
+          Format      json
+          Time_Key    time
+          Time_Format %Y-%m-%d %H:%M:%S,%L
+          Time_Keep   On
+
+    inputs: |
+      [INPUT]
+          Name              tail
+          Path              /var/log/containers/*_resiltyio_agent-*_agent-*.log
+          Parser            json
+          Tag               reslib.agent
+          Refresh_Interval  5
+
+    filters: |
+      # Route events to a new tag
+      [FILTER]
+          Name          grep
+          Match         reslib.agent
+          Regex         type  ^event$
+
+      # Route metrics to a new tag
+      [FILTER]
+          Name          grep
+          Match         reslib.agent
+          Regex         type  ^metrics$
+
+    outputs: |
+      # Output for events
+      [OUTPUT]
+          Name          http
+          Match         reslity.agent.events
+          Host          controlplane.resilty.io
+          Port          443
+          URI           /api/v1/ingest/events
+          Format        json
+          Retry_Limit   3
+
+      # Output for metrics
+      [OUTPUT]
+          Name          http
+          Match         reslity.agent.metrics
+          Host          controlplane.resilty.io
+          Port          443
+          URI           api/v1/ingest/metrics
+          Format        json
+          Retry_Limit   3
+
+
+volumes:
+  - name: fluentbit-config
+    configMap:
+      name: agent-fluentbit
+  - name: logs
+    hostPath:
+      path: /var/log/containers
+      type: Directory
+
+
+containerCommand:
+  - "poetry"
+  - "run"
+  - "resilience-agent"

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
 from server.constants import ResiliencySuite, ResiliencySuiteStatusEnum
 
 app = FastAPI(title="Control Plane API")
@@ -80,3 +80,27 @@ async def queue_suite(suite: ResiliencySuite):
     suite.state = ResiliencySuiteStatusEnum.QUEUED
     current_suite = suite
     return {"status": "queued"}
+
+
+# -------------------------------------------------------------------
+# Ingest Events
+# -------------------------------------------------------------------
+
+
+@app.post("/api/v1/ingest/events", status_code=status.HTTP_201_CREATED)
+async def ingest_events(request: Request):
+    payload = await request.json()
+    print(payload)
+    return {"status": "events_queued", "count": len(payload)}
+
+
+# -------------------------------------------------------------------
+# Ingest Events
+# -------------------------------------------------------------------
+
+
+@app.post("/api/v1/ingest/metrics", status_code=status.HTTP_201_CREATED)
+async def ingest_metrics(request: Request):
+    payload = await request.json()
+    print(payload)
+    return {"status": "metrics_queued", "count": len(payload)}

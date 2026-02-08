@@ -1,0 +1,34 @@
+image:
+  repository: resilience-agent
+  tag: local
+
+
+environment_variable:
+  enabled: true
+  data:
+    ENV: local
+    RESILTY_AGENT_CONTROL_PLANE_API_HOST: http://controlplane.resiltyio.svc.cluster.local:8000
+
+
+fluentbit:
+  config:
+    outputs: |
+      # Output for events
+      [OUTPUT]
+          Name          http
+          Match         reslity.agent.events
+          Host          resilience-agent-cp.resiltyio.svc.cluster.local
+          Port          8000
+          URI           /api/v1/ingest/events
+          Format        json
+          Retry_Limit   3
+
+      # Output for metrics
+      [OUTPUT]
+          Name          http
+          Match         reslity.agent.metrics
+          Host          resilience-agent-cp.resiltyio.svc.cluster.local
+          Port          8000
+          URI           /api/v1/ingest/metrics
+          Format        json
+          Retry_Limit   3

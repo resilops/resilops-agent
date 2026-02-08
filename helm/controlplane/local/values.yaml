@@ -1,5 +1,5 @@
 namespace: resiltyio
-nameOverride: resilience-agent-cp
+nameOverride: controlplane
 fullnameOverride: "Resilience Agent Control Plane"
 
 workload:
@@ -7,7 +7,7 @@ workload:
 
 serviceAccount:
   create: true
-  name: resilience-agent-cp-sa
+  name: controlplane-sa
 
 image:
   repository: resilience-agent-cp
