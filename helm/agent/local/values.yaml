@@ -16,19 +16,21 @@ fluentbit:
       # Output for events
       [OUTPUT]
           Name          http
-          Match         reslity.agent.events
-          Host          resilience-agent-cp.resiltyio.svc.cluster.local
+          Match         resilty.agent.events
+          Host          controlplane.resiltyio.svc.cluster.local
           Port          8000
           URI           /api/v1/ingest/events
           Format        json
+          tls           Off
           Retry_Limit   3
 
       # Output for metrics
       [OUTPUT]
           Name          http
-          Match         reslity.agent.metrics
-          Host          resilience-agent-cp.resiltyio.svc.cluster.local
+          Match         resilty.agent.metrics
+          Host          controlplane.resiltyio.svc.cluster.local
           Port          8000
           URI           /api/v1/ingest/metrics
           Format        json
+          tls           Off
           Retry_Limit   3

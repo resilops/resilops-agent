@@ -10,6 +10,9 @@ def setup_logging() -> None:
     """Configure logging using the provided dictionary or the default configuration."""
 
     log_level = os.getenv("LOG_LEVEL", "INFO")
+    log_path = os.getenv("LOG_FILE", "/var/log/agent/agent.log")
+    max_mb = int(os.getenv("LOG_MAX_MB", 50))
+    backup_count = int(os.getenv("LOG_BACKUP_COUNT", 3))
 
     logging_config: Dict[str, Any] = {
         "version": 1,
@@ -32,20 +35,28 @@ def setup_logging() -> None:
                 "formatter": "json",
                 "level": "DEBUG",
             },
+            "file": {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": log_path,
+                "formatter": "json",
+                "level": "DEBUG",
+                "maxBytes": max_mb * 1024 * 1024,
+                "backupCount": backup_count,
+            },
         },
         "loggers": {
             "": {
-                "handlers": ["console"],
+                "handlers": ["console", "file"],
                 "level": "INFO",
                 "propagate": False,
             },
             "agent": {
-                "handlers": ["console"],
+                "handlers": ["console", "file"],
                 "level": log_level,
                 "propagate": False,
             },
             "httpx": {
-                "handlers": ["console"],
+                "handlers": ["console", "file"],
                 "level": "WARNING",  # silence INFO request logs
                 "propagate": False,
             },

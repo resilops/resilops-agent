@@ -87,8 +87,8 @@ sidecars:
       volumeMounts:
         - name: fluentbit-config
           mountPath: /fluent-bit/etc
-        - name: logs
-          mountPath: /var/log/containers
+        - name: agent-logs
+          mountPath: /var/log/agent
           readOnly: true
       command:
         - /fluent-bit/bin/fluent-bit
@@ -115,54 +115,61 @@ fluentbit:
     inputs: |
       [INPUT]
           Name              tail
-          Path              /var/log/containers/*_resiltyio_agent-*_agent-*.log
+          Path              /var/log/agent/agent.log*
           Parser            json
-          Tag               reslib.agent
+          Tag               resilty.agent
           Refresh_Interval  5
+          Skip_Long_Lines   On
+          Mem_Buf_Limit     10MB
 
     filters: |
-      # Route events to a new tag
+      # Route events to resilty.agent.events
       [FILTER]
-          Name          grep
-          Match         reslib.agent
-          Regex         type  ^event$
+          Name          rewrite_tag
+          Match         resilty.agent
+          Rule          $type ^event$ resilty.agent.events true
 
-      # Route metrics to a new tag
+      # Route metrics to resilty.agent.metrics
       [FILTER]
-          Name          grep
-          Match         reslib.agent
-          Regex         type  ^metrics$
+          Name          rewrite_tag
+          Match         resilty.agent
+          Rule          $type ^metrics$ resilty.agent.metrics true
 
     outputs: |
       # Output for events
       [OUTPUT]
           Name          http
-          Match         reslity.agent.events
+          Match         resilty.agent.events
           Host          controlplane.resilty.io
           Port          443
           URI           /api/v1/ingest/events
           Format        json
+          tls           On
           Retry_Limit   3
 
       # Output for metrics
       [OUTPUT]
           Name          http
-          Match         reslity.agent.metrics
+          Match         resilty.agent.metrics
           Host          controlplane.resilty.io
           Port          443
-          URI           api/v1/ingest/metrics
+          URI           /api/v1/ingest/metrics
           Format        json
+          tls           On
           Retry_Limit   3
+
+volumeMounts:
+  - name: agent-logs
+    mountPath: /var/log/agent
 
 
 volumes:
   - name: fluentbit-config
     configMap:
       name: agent-fluentbit
-  - name: logs
-    hostPath:
-      path: /var/log/containers
-      type: Directory
+  - name: agent-logs
+    emptyDir:
+      sizeLimit: 500Mi
 
 
 containerCommand:
