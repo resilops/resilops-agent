@@ -9,7 +9,7 @@ lib: ## Install resilience-lib
 	@rsync -av --exclude='pyenv' ../resilience-lib/ ./local-libs/resilience-lib
 
 chart: ## Build local kubernetes charts
-	helm secrets template resilience-agent ../helm-charts/app -f ./helm/agent/common.yaml -f ./helm/agent/local/values.yaml -f ./helm/agent/local/secrets.enc.yaml
+	helm secrets template resilience-agent ../helm-charts/app -f ./helm/agent/common.yaml -f ./helm/agent/fluentbit.yaml -f ./helm/agent/local/values.yaml -f ./helm/agent/local/secrets.enc.yaml
 	helm secrets template control-plane ../helm-charts/app -f ./helm/controlplane/local/values.yaml
 
 build: lib ## Build local docker containers
@@ -29,6 +29,7 @@ up: ## Deploy local charts
 	helm secrets upgrade --install agent ../helm-charts/app \
 		-n resiltyio \
 		-f ./helm/agent/common.yaml \
+		-f ./helm/agent/fluentbit.yaml \
 		-f ./helm/agent/local/secrets.enc.yaml \
 		-f ./helm/agent/local/values.yaml --force
 
