@@ -44,8 +44,8 @@ environment_variable:
   enabled: true
   data:
     LOG_LEVEL: INFO
-    LOG_MAX_MB: 50
-    LOG_BACKUP_COUNT: 5
+    LOG_MAX_MB: "50"
+    LOG_BACKUP_COUNT: "5"
 
 migration:
   enabled: false

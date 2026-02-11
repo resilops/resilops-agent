@@ -21,6 +21,10 @@ fluentbit:
     - name: agent-logs
       mountPath: /var/log/agent
       readOnly: true
+  volumes:
+    - name: fluentbit-config
+      configMap:
+        name: agent-fluentbit
   config:
     service: |
       [SERVICE]
@@ -82,8 +86,3 @@ fluentbit:
           Format        json
           tls           On
           Retry_Limit   3
-
-volumes:
-  - name: fluentbit-config
-    configMap:
-      name: agent-fluentbit
