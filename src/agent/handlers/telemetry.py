@@ -2,9 +2,9 @@ import logging
 from typing import Any, Optional, Union
 
 from reslib.helpers import BaseTelemetry as LibBaseTelemetry
-from reslib.observers.schemas import (
-    EventPayload as LibEventPayload,
-    MetricsPayload as LibMetricsPayload,
+from reslib.schemas.telemetry import (
+    EventPayload as ReslibEventPayload,
+    MetricsPayload as ReslibMetricsPayload,
 )
 
 from agent.schemas.event import EventPayload
@@ -38,7 +38,7 @@ class AgentTelemetry:
 
         Args:
             name:
-                Logical name of the event or metric. Typically the enum value
+                Logical name of the event or metric - enum value
                 (e.g. `res:event:...` or `res:measurement:...`).
             payload:
                 Pydantic model representing the event or metric payload.
@@ -52,7 +52,7 @@ class AgentTelemetry:
         logger.info(
             name,
             extra={
-                **payload.model_dump(),
+                **payload.model_dump(mode="json"),
                 "run_id": run_id,
                 "suite_id": suite_id,
                 "scenario_id": scenario_id,
@@ -62,7 +62,7 @@ class AgentTelemetry:
     def emit_event(
         self,
         *,
-        event: Union[EventPayload, LibEventPayload],
+        event: EventPayload | ReslibEventPayload,
         run_id: int,
         suite_id: int,
         scenario_id: Optional[int] = None,
@@ -81,7 +81,7 @@ class AgentTelemetry:
                 Optional identifier for the scenario.
         """
         self._log(
-            name=event.event_name.value,
+            name=event.event_name.value,  # noqa
             payload=event,
             run_id=run_id,
             suite_id=suite_id,
@@ -91,7 +91,7 @@ class AgentTelemetry:
     def emit_metrics(
         self,
         *,
-        metrics: LibMetricsPayload,
+        metrics: ReslibMetricsPayload,
         run_id: int,
         suite_id: int,
         scenario_id: Optional[int] = None,
@@ -148,7 +148,7 @@ class ResLibTelemetryWithContext(LibBaseTelemetry):
         self.suite_id = suite_id
         self.scenario_id = scenario_id
 
-    def emit_event(self, *, event: Union[LibEventPayload, EventPayload]) -> None:
+    def emit_event(self, *, event: Union[ReslibEventPayload, EventPayload]) -> None:
         """
         Emit an event to the agent telemetry system.
 
@@ -165,7 +165,7 @@ class ResLibTelemetryWithContext(LibBaseTelemetry):
             scenario_id=self.scenario_id,
         )
 
-    def emit_metrics(self, *, metrics: LibMetricsPayload) -> None:
+    def emit_metrics(self, *, metrics: ReslibMetricsPayload) -> None:
         """
         Emit a metrics payload to the agent telemetry system.
 

@@ -1,10 +1,10 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
-class EventEnum(str, Enum):
+class EventEnum(Enum):
     """All events enum"""
 
     SUITE_QUEUED = "res:agent:event:suite:queued"
@@ -15,8 +15,6 @@ class EventEnum(str, Enum):
 
 class EventPayload(BaseModel):
     """Base event payload that allows arbitrary additional fields."""
-
-    model_config = ConfigDict(extra="allow")
 
     event_name: EventEnum = Field(..., description="Name of the event.")
     type: str = Field(default="event", description="Event payload")

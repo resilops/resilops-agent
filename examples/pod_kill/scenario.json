@@ -32,7 +32,7 @@
                 },
                 {
                     "type": "guardrail",
-                    "name": "ensure_not_at_max_replicas",
+                    "name": "ensure_hpa_not_at_max_replicas",
                     "kwargs": {}
                 },
                 {
@@ -44,7 +44,7 @@
                     "type": "guardrail",
                     "name": "ensure_pdb_not_violated",
                     "kwargs": {
-                        "allow_missing_pdb": false
+                        "allow_missing_pdb": true
                     }
                 },
                 {

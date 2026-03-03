@@ -24,7 +24,7 @@
                 "metric_source": "Resource",
                 "resource_type": "cpu",
                 "idle_cpu_pct": 10,
-                "min_pods_idle_pct": 0,
+                "min_idle_pct": 0,
                 "cpu_stress_threshold_pct": 95
             },
             "steps": [
@@ -69,7 +69,7 @@
                     "type": "rollback",
                     "name": "wait_until_hpa_scales_down",
                     "kwargs": {
-                        "timeout_seconds": 500
+                        "timeout_seconds": 900
                     }
                 }
             ],

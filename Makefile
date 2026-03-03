@@ -37,7 +37,7 @@ down: ## Remove all the deployments
 	helm uninstall -n resiltyio agent controlplane
 
 forward: ## Port forward control plane to localhost
-	kubectl port-forward svc/controlplane 8000:8000
+	kubectl port-forward svc/controlplane 8000:8000 -n resiltyio
 
 logs: ## Log stream of agent
 	kubectl logs -f $$(kubectl get pod -n resiltyio -l app.kubernetes.io/name=agent -o jsonpath='{.items[0].metadata.name}') -n resiltyio
@@ -52,7 +52,7 @@ nginx-down: ## Delete nginx deployment
 	kubectl delete -f ./examples/nginx-hpa.yaml
 
 http-up: ## Deploy http echo with hpa
-	kubectl apply -f ./examples/http-echo.yaml -n q     q
+	kubectl apply -f ./examples/http-echo.yaml -n http-echo
 
 http-down: ## Delete http echo deployment
 	kubectl delete -f ./examples/http-echo.yaml
