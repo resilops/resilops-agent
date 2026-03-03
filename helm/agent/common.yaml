@@ -3,7 +3,12 @@ nameOverride: agent
 fullnameOverride: "Resilience Agent"
 
 workload:
-  type: daemonset
+  type: deployment
+
+replicaCount: 2
+
+autoscaling:
+  enabled: false
 
 serviceAccount:
     create: true
@@ -37,9 +42,6 @@ readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 10
 
-autoscaling:
-  enabled: false
-
 environment_variable:
   enabled: true
   data:
@@ -52,29 +54,37 @@ migration:
 
 rbac:
   enabled: true
-  clusterRoleName: resiltio-clusterrole
-  rules:
-    - apiGroups: [""]
-      resources: ["pods"]
-      verbs: ["get", "list", "watch", "delete"]
-    - apiGroups: [""]
-      resources: ["pods/exec"]
-      verbs: ["get", "create"]
-    - apiGroups: ["apps"]
-      resources: ["deployments"]
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["autoscaling"]
-      resources: ["horizontalpodautoscalers"]
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["policy"]
-      resources: ["poddisruptionbudgets"]
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["metrics.k8s.io"]
-      resources: ["pods"]
-      verbs: ["get", "list"]
-  namespaces:
-    - "nginx"
-    - "http-echo"
+  namespaced:
+    roleName: resiltyio-rabc-ns
+    namespaces:
+      - nginx
+      - http-echo
+    rules:
+      - apiGroups: [""]
+        resources: ["pods"]
+        verbs: ["get", "list", "watch", "delete"]
+      - apiGroups: [""]
+        resources: ["pods/exec"]
+        verbs: ["get", "create"]
+      - apiGroups: ["apps"]
+        resources: ["deployments"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["autoscaling"]
+        resources: ["horizontalpodautoscalers"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["policy"]
+        resources: ["poddisruptionbudgets"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["metrics.k8s.io"]
+        resources: ["pods"]
+        verbs: ["get", "list"]
+
+  cluster:
+    roleName: resiltyio-rabc-cluster
+    rules:
+      # Kubernetes version endpoint (non-resource URL)
+      - nonResourceURLs: ["/version"]
+        verbs: ["get"]
 
 volumeMounts:
   - name: agent-logs
