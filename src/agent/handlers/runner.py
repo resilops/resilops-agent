@@ -38,16 +38,12 @@ class ResiliencySuiteRunner:
         """
         for scenario_id in suite.scenarios:
             try:
-                scenario = await self.client.fetch_scenario(
+                scenario: ResiliencyScenario = await self.client.fetch_scenario(
                     suite_id=suite.id,
                     scenario_id=scenario_id,
                 )
                 await execute_resilience_scenario(
-                    scenario=ResiliencyScenario(
-                        template=scenario.template,
-                        steps=[s.model_dump() for s in scenario.steps],
-                        observer=scenario.observer.model_dump(),
-                    ),
+                    scenario=scenario,
                     telemetry=ResLibTelemetryWithContext(
                         telemetry=AgentTelemetry(),
                         run_id=suite.run_id,

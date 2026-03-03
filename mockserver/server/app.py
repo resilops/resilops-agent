@@ -1,7 +1,7 @@
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request, status
-from server.constants import ResiliencySuite, ResiliencySuiteStatusEnum
+from server.constants import AGENT_CONFIG, ResiliencySuite, ResiliencySuiteStatusEnum
 
 app = FastAPI(title="Control Plane API")
 
@@ -34,6 +34,12 @@ async def health_ready():
 async def agent_heartbeat():
     """Simulate heartbeat endpoint."""
     return {"status": "ok"}
+
+
+@app.get("/api/v1/agent/config")
+async def agent_config():
+    """Simulate agent config endpoint."""
+    return AGENT_CONFIG
 
 
 @app.get("/api/v1/agent/suite")

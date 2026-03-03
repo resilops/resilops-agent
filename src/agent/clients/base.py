@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Mapping, Optional
 
 import httpx
 
@@ -44,7 +44,7 @@ class BaseAPIClient:
         self.config = config
 
     @property
-    def headers(self) -> Dict[str, str]:
+    def headers(self) -> dict[str, str]:
         """
         Return HTTP headers including authorization keys.
 
@@ -68,8 +68,8 @@ class BaseAPIClient:
         raise NotImplementedError("Subclasses must define `host` property")
 
     async def _request(
-        self, method: str, url: str, json: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, method: str, url: str, json: Optional[Mapping[str, Any]] = None
+    ) -> Any:
         """
         Execute a single HTTP request without retries.
 
@@ -79,7 +79,7 @@ class BaseAPIClient:
             json (Optional[dict]): JSON payload for request body.
 
         Returns:
-            dict: Parsed JSON response.
+            Any: Parsed JSON response.
 
         Raises:
             APIRequestError: If HTTP response is 4xx/5xx.
@@ -99,8 +99,8 @@ class BaseAPIClient:
                 ) from exc
 
     async def request(
-        self, method: str, path: str, json: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, method: str, path: str, json: Optional[Mapping[str, Any]] = None
+    ) -> Any:
         """
         Execute an HTTP request with automatic retries for network
         errors and 5xx HTTP responses.
@@ -111,7 +111,7 @@ class BaseAPIClient:
             json (Optional[dict]): JSON payload for request.
 
         Returns:
-            dict: Parsed JSON response.
+            Any: Parsed JSON response.
 
         Raises:
             APIRequestError: If max retries exceeded or non-retriable
@@ -122,7 +122,6 @@ class BaseAPIClient:
         for attempt in range(1, self.MAX_RETRIES + 1):
             try:
                 return await self._request(method=method, url=url, json=json)
-
             except (httpx.RequestError, APIRequestError) as exc:
                 # Stop retrying if non-retriable or max attempts reached
                 if attempt >= self.MAX_RETRIES:
@@ -140,3 +139,5 @@ class BaseAPIClient:
                 self.RETRY_DELAY,
             )
             await asyncio.sleep(self.RETRY_DELAY)
+
+        return None

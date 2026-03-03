@@ -2,13 +2,11 @@ image:
   repository: resilience-agent
   tag: local
 
-
 environment_variable:
   enabled: true
   data:
     ENV: local
     RESILTY_AGENT_CONTROL_PLANE_API_HOST: http://controlplane.resiltyio.svc.cluster.local:8000
-
 
 fluentbit:
   config:

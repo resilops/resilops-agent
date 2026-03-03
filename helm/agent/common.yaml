@@ -74,6 +74,7 @@ rbac:
       verbs: ["get", "list"]
   namespaces:
     - "nginx"
+    - "http-echo"
 
 volumeMounts:
   - name: agent-logs

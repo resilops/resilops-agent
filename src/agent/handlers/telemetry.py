@@ -2,7 +2,7 @@ import logging
 from typing import Any, Optional, Union
 
 from reslib.helpers import BaseTelemetry as LibBaseTelemetry
-from reslib.schemas.telemetry import (
+from reslib.observers.schemas import (
     EventPayload as LibEventPayload,
     MetricsPayload as LibMetricsPayload,
 )

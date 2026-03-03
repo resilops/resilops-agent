@@ -15,7 +15,7 @@ chart: ## Build local kubernetes charts
 build: lib ## Build local docker containers
 	@eval $(minikube docker-env)
 	@echo "🐳 Building Docker containers"
-	docker build -f ./docker/AgentDockerfile --target local -t resilience-agent:local .
+	docker build --no-cache -f ./docker/AgentDockerfile --target local -t resilience-agent:local .
 	docker build -f ./docker/MockserverDockerfile -t resilience-agent-cp:local .
 
 up: ## Deploy local charts
@@ -40,13 +40,19 @@ forward: ## Port forward control plane to localhost
 	kubectl port-forward svc/controlplane 8000:8000
 
 logs: ## Log stream of agent
-	kubectl logs -f $$(kubectl get pod -n resiltyio -l app.kubernetes.io/name=agent -o jsonpath='{.items[0].metadata.name}')
+	kubectl logs -f $$(kubectl get pod -n resiltyio -l app.kubernetes.io/name=agent -o jsonpath='{.items[0].metadata.name}') -n resiltyio
 
 
 nginx-up: ## Deploy nginx with hpa
-	@echo "🐳 Building stress container"
+	@echo "🐳 Building nginx container"
 	docker build -f ./docker/NginxDockerfile -t resiltyio-nginx:local .
 	kubectl apply -f ./examples/nginx-hpa.yaml -n nginx
 
 nginx-down: ## Delete nginx deployment
 	kubectl delete -f ./examples/nginx-hpa.yaml
+
+http-up: ## Deploy http echo with hpa
+	kubectl apply -f ./examples/http-echo.yaml -n q     q
+
+http-down: ## Delete http echo deployment
+	kubectl delete -f ./examples/http-echo.yaml

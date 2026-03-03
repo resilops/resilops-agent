@@ -6,7 +6,7 @@
         "tags": ["kubernetes"],
         "execution": {
             "mode": "series",
-            "stop_on_failure": "true"
+            "stop_on_failure": true
         },
         "scenarios": [1]
     },
@@ -14,32 +14,52 @@
         {
             "id": 1,
             "suite_id": 1,
+            "name": "POD_KILL",
             "title": "Do we remain available in face of pod going down?",
             "description": "We expect Kubernetes to handle the situation gracefully when a pod goes down",
             "template": {
-                "respect_pdb": "true",
                 "namespace": "nginx",
                 "workload": "nginx-deployment",
                 "quantity": 1,
                 "mode": "absolute",
-                "min_remaining_replicas": 1,
-                "pod_respawn_timeout_seconds": 300
+                "min_remaining_replicas": 1
             },
             "steps": [
                 {
                     "type": "guardrail",
-                    "name": "validate_pod_termination_guardrail",
-                    "overrides": {}
+                    "name": "ensure_workload_steady",
+                    "kwargs": {}
+                },
+                {
+                    "type": "guardrail",
+                    "name": "ensure_not_at_max_replicas",
+                    "kwargs": {}
+                },
+                {
+                    "type": "guardrail",
+                    "name": "validate_min_remaining_replicas",
+                    "kwargs": {}
+                },
+                {
+                    "type": "guardrail",
+                    "name": "ensure_pdb_not_violated",
+                    "kwargs": {
+                        "allow_missing_pdb": false
+                    }
                 },
                 {
                     "type": "action",
                     "name": "terminate_pods",
-                    "overrides": {}
+                    "kwargs": {
+                        "timeout_seconds":200
+                    }
                 },
                 {
                     "type": "rollback",
                     "name": "wait_until_pod_respawn",
-                    "overrides": {}
+                    "kwargs": {
+                        "timeout_seconds": 300
+                    }
                 }
             ],
             "observer": {
@@ -51,10 +71,8 @@
                 },
                 "kwargs": {
                     "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
-                    "namespace": "nginx",
-                    "workload": "nginx-deployment",
                     "requests_per_interval": 3,
-                    "http_request_timeout_seconds": 5
+                    "request_timeout_seconds": 5
                 }
             }
         }

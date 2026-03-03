@@ -25,7 +25,7 @@ async def main() -> None:
     shutdown_event = asyncio.Event()
 
     # Load agent configuration from environment
-    config = AgentConfigModel()
+    config = AgentConfigModel()  # noqa
 
     # Initialize API client
     control_plane_client = ControlPlaneClient(config)
@@ -33,7 +33,7 @@ async def main() -> None:
     # Initialize agent runtime state
     state_handler = AgentStateHandler()
 
-    # Initialise event handler
+    # Initialize event handler
     telemetry = AgentTelemetry()
 
     # Create background workers

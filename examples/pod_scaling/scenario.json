@@ -14,6 +14,7 @@
         {
             "id": 1,
             "suite_id": 1,
+            "name": "HPA_SCALE_ON_CPU_STRESS",
             "title": "Do the application scale according to the customer needs?",
             "description": "We expect HPA is configured and kubernetes pods scale within a timeframe.",
             "template": {
@@ -24,25 +25,52 @@
                 "resource_type": "cpu",
                 "idle_cpu_pct": 10,
                 "min_pods_idle_pct": 0,
-                "pod_cpu_stress_threshold_pct": 95,
-                "max_stress_duration_seconds": 300,
-                "hpa_scale_down_timeout_seconds": 700
+                "cpu_stress_threshold_pct": 95
             },
             "steps": [
                 {
                     "type": "guardrail",
-                    "name": "validate_hpa_cpu_scaling_guardrail",
-                    "overrides": {}
+                    "name": "validate_metric_and_resource",
+                    "kwargs": {}
+                },
+                {
+                    "type": "guardrail",
+                    "name": "ensure_hpa_exists",
+                    "kwargs": {}
+                },
+                {
+                    "type": "guardrail",
+                    "name": "validate_hpa_resource_metric",
+                    "kwargs": {}
+                },
+                {
+                    "type": "guardrail",
+                    "name": "validate_pods_to_stress_cpu",
+                    "kwargs": {}
+                },
+                {
+                    "type": "guardrail",
+                    "name": "ensure_hpa_not_at_max_replicas",
+                    "kwargs": {}
+                },
+                {
+                    "type": "guardrail",
+                    "name": "ensure_metrics_server_available",
+                    "kwargs": {}
                 },
                 {
                     "type": "action",
                     "name": "stress_cpu_hpa",
-                    "overrides": {}
+                    "kwargs": {
+                        "max_stress_duration_seconds": 300
+                    }
                 },
                 {
                     "type": "rollback",
                     "name": "wait_until_hpa_scales_down",
-                    "overrides": {}
+                    "kwargs": {
+                        "timeout_seconds": 500
+                    }
                 }
             ],
             "observer": {
@@ -57,7 +85,7 @@
                     "namespace": "nginx",
                     "workload": "nginx-deployment",
                     "requests_per_interval": 3,
-                    "http_request_timeout_seconds": 5
+                    "request_timeout_seconds": 5
                 }
             }
         }

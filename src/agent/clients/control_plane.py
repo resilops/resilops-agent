@@ -1,9 +1,11 @@
 import logging
 from typing import Dict, Optional
 
+from reslib.schemas.scenario import ResiliencyScenario
+
 from agent.clients.base import BaseAPIClient
 from agent.schemas.heartbeat import HeartbeatResponseModel
-from agent.schemas.suite import ResiliencyScenario, ResiliencySuite
+from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
 
