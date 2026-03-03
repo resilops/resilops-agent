@@ -68,7 +68,11 @@ class BaseAPIClient:
         raise NotImplementedError("Subclasses must define `host` property")
 
     async def _request(
-        self, method: str, url: str, json: Optional[Mapping[str, Any]] = None
+        self,
+        method: str,
+        url: str,
+        params: Optional[Mapping[str, Any]] = None,
+        json: Optional[Mapping[str, Any]] = None,
     ) -> Any:
         """
         Execute a single HTTP request without retries.
@@ -76,6 +80,7 @@ class BaseAPIClient:
         Args:
             method (str): HTTP method (GET, POST, PUT, DELETE).
             url (str): Full request URL.
+            params (Optional[dict]): Data as request parameters.
             json (Optional[dict]): JSON payload for request body.
 
         Returns:
@@ -88,7 +93,10 @@ class BaseAPIClient:
         timeout = httpx.Timeout(self.REQUEST_TIMEOUT)
         async with httpx.AsyncClient(headers=self.headers, timeout=timeout) as client:
             try:
-                response = await client.request(method, url, json=json)
+                if method.upper() == "GET":
+                    response = await client.request(method, url, params=params)
+                else:
+                    response = await client.request(method, url, json=json)
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPStatusError as exc:
@@ -99,7 +107,11 @@ class BaseAPIClient:
                 ) from exc
 
     async def request(
-        self, method: str, path: str, json: Optional[Mapping[str, Any]] = None
+        self,
+        method: str,
+        path: str,
+        params: Optional[Mapping[str, Any]] = None,
+        json: Optional[Mapping[str, Any]] = None,
     ) -> Any:
         """
         Execute an HTTP request with automatic retries for network
@@ -108,6 +120,7 @@ class BaseAPIClient:
         Args:
             method (str): HTTP method.
             path (str): API path (appended to host).
+            params (Optional[dict]): Data as request parameters.
             json (Optional[dict]): JSON payload for request.
 
         Returns:
@@ -121,7 +134,9 @@ class BaseAPIClient:
 
         for attempt in range(1, self.MAX_RETRIES + 1):
             try:
-                return await self._request(method=method, url=url, json=json)
+                return await self._request(
+                    method=method, url=url, params=params, json=json
+                )
             except (httpx.RequestError, APIRequestError) as exc:
                 # Stop retrying if non-retriable or max attempts reached
                 if attempt >= self.MAX_RETRIES:

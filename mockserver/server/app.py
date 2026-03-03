@@ -1,9 +1,11 @@
+import asyncio
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request, status
 from server.constants import AGENT_CONFIG, ResiliencySuite, ResiliencySuiteStatusEnum
 
 app = FastAPI(title="Control Plane API")
+suite_lock = asyncio.Lock()
 
 current_suite: Optional[ResiliencySuite] = None
 
@@ -30,9 +32,11 @@ async def health_ready():
 # -------------------------------------------------------------------
 
 
-@app.get("/api/v1/agent/heartbeat")
-async def agent_heartbeat():
+@app.post("/api/v1/agent/heartbeat")
+async def agent_heartbeat(request: Request):
     """Simulate heartbeat endpoint."""
+    payload = await request.json()
+    print(payload)
     return {"status": "ok"}
 
 
@@ -52,15 +56,22 @@ async def agent_fetch_suite():
 
 
 @app.post("/api/v1/agent/suite/ack")
-async def agent_acknowledge_suite():
+async def agent_acknowledge_suite(request: Request):
     """Acknowledge and mark suite as processed."""
-    if current_suite is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No suite queued",
-        )
-
-    current_suite.state = ResiliencySuiteStatusEnum.PROCESSED
+    payload = await request.json()
+    print(payload)
+    async with suite_lock:
+        if current_suite is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No suite queued",
+            )
+        if current_suite.state == ResiliencySuiteStatusEnum.PROCESSED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Some other agent already picked this up",
+            )
+        current_suite.state = ResiliencySuiteStatusEnum.PROCESSED
     return {"status": "ok"}
 
 

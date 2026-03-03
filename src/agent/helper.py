@@ -1,3 +1,4 @@
+import os
 import urllib.parse
 from typing import Dict, Iterable
 
@@ -23,3 +24,9 @@ def non_retriable_status_codes() -> Iterable[int]:
 
 def get_ids_from_suite(suite: ResiliencySuite) -> Dict:
     return {"suite_id": suite.id, "run_id": suite.run_id}
+
+
+def get_agent_name() -> str:
+    """Get agent name"""
+    agent_name: str = os.getenv("POD_NAME", "default")
+    return agent_name

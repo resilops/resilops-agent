@@ -16,7 +16,7 @@ build: lib ## Build local docker containers
 	@eval $(minikube docker-env)
 	@echo "🐳 Building Docker containers"
 	docker build --no-cache -f ./docker/AgentDockerfile --target local -t resilience-agent:local .
-	docker build -f ./docker/MockserverDockerfile -t resilience-agent-cp:local .
+	docker build --no-cache -f ./docker/MockserverDockerfile -t resilience-agent-cp:local .
 
 up: ## Deploy local charts
 	@echo "🚀 Deploying Resilience Agent Control Plane Locally"
