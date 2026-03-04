@@ -5,6 +5,12 @@ from reslib.schemas.scenario import ResiliencyScenario
 
 from agent import helper as h
 from agent.clients.base import BaseAPIClient
+from agent.constants import (
+    AGENT_HEARTBEAT_PATH,
+    AGENT_SUITE_ACK_PATH,
+    AGENT_SUITE_PATH,
+    AGENT_SUITE_SCENARIO_PATH,
+)
 from agent.schemas.heartbeat import HeartbeatResponseModel
 from agent.schemas.suite import ResiliencySuite
 
@@ -42,7 +48,7 @@ class ControlPlaneClient(BaseAPIClient):
         logger.debug("Sending heartbeat")
         response: Dict = await self.request(
             "POST",
-            "/api/v1/agent/heartbeat",
+            AGENT_HEARTBEAT_PATH,
             json={"agent_name": h.get_agent_name()},
         )
         return HeartbeatResponseModel(**response)
@@ -56,7 +62,7 @@ class ControlPlaneClient(BaseAPIClient):
             none available.
         """
         logger.debug("Fetching resiliency suite from control plane")
-        response: Dict = await self.request("GET", "/api/v1/agent/suite")
+        response: Dict = await self.request("GET", AGENT_SUITE_PATH)
         return ResiliencySuite(**response) if response else None
 
     async def ack_suite(self, suite_id: int) -> None:
@@ -64,7 +70,7 @@ class ControlPlaneClient(BaseAPIClient):
         logger.info("Acknowledging suite with ID: %d", suite_id)
         await self.request(
             "POST",
-            "/api/v1/agent/suite/ack",
+            AGENT_SUITE_ACK_PATH,
             json={"id": suite_id, "agent_name": h.get_agent_name()},
         )
         return
@@ -80,6 +86,9 @@ class ControlPlaneClient(BaseAPIClient):
         """
         logger.debug("Fetching resiliency scenario from control plane")
         response: Dict = await self.request(
-            "GET", f"/api/v1/agent/suite/{suite_id}/scenario/{scenario_id}"
+            "GET",
+            AGENT_SUITE_SCENARIO_PATH.format(
+                suite_id=suite_id, scenario_id=scenario_id
+            ),
         )
         return ResiliencyScenario(**response)
