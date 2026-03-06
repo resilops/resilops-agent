@@ -53,9 +53,13 @@ class BaseAPIClient:
         """
         return {
             "Content-Type": "application/json",
-            "RG-X-API-KEY-ID": self.config.api_key_id,
-            "RG-X-API-KEY-SECRET": self.config.api_secret_key,
+            "X-Resiltyio-Agent-Id": h.get_agent_id(),
         }
+
+    @property
+    def auth(self) -> httpx.Auth:
+        # username = key id, password = key secret
+        return httpx.BasicAuth(self.config.api_key_id, self.config.api_secret_key)
 
     @property
     def host(self) -> str:
@@ -91,7 +95,9 @@ class BaseAPIClient:
             httpx.RequestError: For network-related errors.
         """
         timeout = httpx.Timeout(self.REQUEST_TIMEOUT)
-        async with httpx.AsyncClient(headers=self.headers, timeout=timeout) as client:
+        async with httpx.AsyncClient(
+            headers=self.headers, auth=self.auth, timeout=timeout
+        ) as client:
             try:
                 if method.upper() == "GET":
                     response = await client.request(method, url, params=params)

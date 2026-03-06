@@ -3,7 +3,6 @@ from typing import Dict, Optional
 
 from reslib.schemas.scenario import ResiliencyScenario
 
-from agent import helper as h
 from agent.clients.base import BaseAPIClient
 from agent.constants import (
     AGENT_HEARTBEAT_PATH,
@@ -46,11 +45,7 @@ class ControlPlaneClient(BaseAPIClient):
             Dict[str, Any]: Parsed JSON response from the control plane.
         """
         logger.debug("Sending heartbeat")
-        response: Dict = await self.request(
-            "POST",
-            AGENT_HEARTBEAT_PATH,
-            json={"agent_name": h.get_agent_name()},
-        )
+        response: Dict = await self.request("POST", AGENT_HEARTBEAT_PATH)
         return HeartbeatResponseModel(**response)
 
     async def fetch_suite(self) -> Optional[ResiliencySuite]:
@@ -71,7 +66,7 @@ class ControlPlaneClient(BaseAPIClient):
         await self.request(
             "POST",
             AGENT_SUITE_ACK_PATH,
-            json={"id": suite_id, "agent_name": h.get_agent_name()},
+            json={"id": suite_id},
         )
         return
 

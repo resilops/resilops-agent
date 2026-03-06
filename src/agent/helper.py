@@ -26,7 +26,9 @@ def get_ids_from_suite(suite: ResiliencySuite) -> Dict:
     return {"suite_id": suite.id, "run_id": suite.run_id}
 
 
-def get_agent_name() -> str:
+def get_agent_id() -> str:
     """Get agent name"""
-    agent_name: str = os.getenv("POD_NAME", "default")
+    agent_name: str = os.getenv("POD_NAME")
+    if not agent_name:
+        raise EnvironmentError("Environment variable POD_NAME not set")
     return agent_name
