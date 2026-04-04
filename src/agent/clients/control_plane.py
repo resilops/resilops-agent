@@ -30,7 +30,7 @@ class ControlPlaneClient(BaseAPIClient):
     - Acknowledging suite
     """
 
-    def __int__(self, config: AgentConfigModel, auth_service: AuthServiceClient):
+    def __init__(self, config: AgentConfigModel, auth_service: AuthServiceClient):
         super().__init__(config)
         self.auth_service = auth_service
 

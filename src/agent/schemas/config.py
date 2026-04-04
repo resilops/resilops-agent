@@ -1,9 +1,10 @@
 from importlib.metadata import PackageNotFoundError, version
-from typing import List
+from typing import Annotated, List
 
 from pydantic import Field, SecretStr, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from reslib.exceptions import ConfigError
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+from agent.exceptions import ConfigError
 
 
 def _get_app_version() -> str:
@@ -58,7 +59,7 @@ class AgentConfigModel(BaseSettings):
     )
 
     # For discovery
-    namespaces: List[str] = Field(default_factory=list)
+    namespaces: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
     # Config version from the control plane. This is not same as app_version.
     # This is needed to inform user if they need to redeploy the app
@@ -69,7 +70,7 @@ class AgentConfigModel(BaseSettings):
 
     @field_validator("namespaces", mode="before")
     @classmethod
-    def parse_namespaces(cls, value: str) -> list[str]:
+    def parse_namespaces(cls, value: str) -> List[str]:
         if not isinstance(value, str):
             raise ConfigError(
                 "RESILTY_AGENT_NAMESPACES must be a comma-separated string"

@@ -1,6 +1,7 @@
 import asyncio
 
 from agent.clients.control_plane import ControlPlaneClient
+from agent.clients.token import AuthServiceClient
 from agent.core.lifecycle import LifecycleManager
 from agent.core.manager import WorkerManager
 from agent.handlers.runner import ResiliencySuiteRunner
@@ -28,7 +29,9 @@ async def main() -> None:
     config = AgentConfigModel()  # noqa
 
     # Initialize API client
-    control_plane_client = ControlPlaneClient(config)
+    control_plane_client = ControlPlaneClient(
+        config=config, auth_service=AuthServiceClient(config=config)
+    )
 
     # Initialize agent runtime state
     state_handler = AgentStateHandler()

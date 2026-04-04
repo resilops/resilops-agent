@@ -51,7 +51,7 @@ async def agent_heartbeat(request: Request):
     """Simulate heartbeat endpoint."""
     payload = await request.json()
     print(payload)
-    return {"status": "ok"}
+    return {"health": payload.get("health")}
 
 
 @app.get("/api/v1/agent/suite")

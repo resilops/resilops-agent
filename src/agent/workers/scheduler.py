@@ -92,10 +92,7 @@ class ResiliencySuiteSchedulerWorker(PeriodicWorker):
 
         self.state_handler.runner.enqueue(suite)
         self.telemetry.emit_event(
-            event=EventPayload(
-                event_name=EventEnum.SUITE_QUEUED,
-                details="Resiliency suite queued for execution.",
-            ),
+            event=EventPayload(event_name=EventEnum.SUITE_QUEUED),
             suite_id=suite.id,
             run_id=suite.run_id,
         )

@@ -77,10 +77,7 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         suite: ResiliencySuite = self.state_handler.runner.current_suite
         self.state_handler.runner.mark_running()
         self.telemetry.emit_event(
-            event=EventPayload(
-                event_name=EventEnum.SUITE_EXECUTING,
-                details="Suite executing",
-            ),
+            event=EventPayload(event_name=EventEnum.SUITE_EXECUTING),
             suite_id=suite.id,
             run_id=suite.run_id,
         )
@@ -100,10 +97,7 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         suite: ResiliencySuite = context.get("suite")
         self.state_handler.runner.mark_idle()
         self.telemetry.emit_event(
-            event=EventPayload(
-                event_name=EventEnum.SUITE_EXECUTION_SUCCESS,
-                details="Suite executed successfully.",
-            ),
+            event=EventPayload(event_name=EventEnum.SUITE_EXECUTION_SUCCESS),
             suite_id=suite.id,
             run_id=suite.run_id,
         )
@@ -123,11 +117,13 @@ class ResiliencySuiteRunnerWorker(PeriodicWorker):
         """
         # Any error raised should have the context with suite and message
         suite: ResiliencySuite = context.get("suite")
-        err: str = context.get("error")
+
         self.state_handler.runner.mark_idle()
         self.telemetry.emit_event(
             event=EventPayload(
-                event_name=EventEnum.SUITE_EXECUTION_FAILED, details=err
+                event_name=EventEnum.SUITE_EXECUTION_FAILED,
+                error=error.__class__.__name__,
+                data=context,
             ),
             suite_id=suite.id,
             run_id=suite.run_id,

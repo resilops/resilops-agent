@@ -2,6 +2,8 @@ image:
   repository: resilience-agent
   tag: local
 
+replicaCount: 1
+
 environment_variable:
   enabled: true
   data:

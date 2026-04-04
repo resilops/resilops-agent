@@ -57,7 +57,7 @@ class ResiliencySuiteRunner:
                     "Suite execution failed",
                     context={
                         "suite": suite,
-                        "error": str(exc),
+                        "error": exc,
                         "scenario_id": scenario_id,
                     },
                 ) from exc

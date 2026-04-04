@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -18,6 +18,5 @@ class EventPayload(BaseModel):
 
     event_name: EventEnum = Field(..., description="Name of the event.")
     type: str = Field(default="event", description="Event payload")
-    details: Optional[str] = Field(
-        default=None, description="Any details about the event"
-    )
+    error: Optional[str] = Field(default=None, description="Any error class")
+    data: Optional[Dict] = Field(default=None, description="Results of the event.")

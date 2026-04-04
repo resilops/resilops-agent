@@ -28,3 +28,7 @@ class ResiliencySuiteExecutionError(Exception):
 
 class AuthServiceError(Exception):
     pass
+
+
+class ConfigError(Exception):
+    pass
