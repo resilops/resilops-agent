@@ -1,8 +1,5 @@
-namespace: resiltyio
 nameOverride: agent
 fullnameOverride: "Resilience Agent"
-
-appVersion: "1.0.0"
 
 workload:
   type: deployment
