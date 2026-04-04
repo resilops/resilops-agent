@@ -1,9 +1,13 @@
-namespace: resiltyio
 nameOverride: agent
 fullnameOverride: "Resilience Agent"
 
 workload:
-  type: daemonset
+  type: deployment
+
+replicaCount: 2
+
+autoscaling:
+  enabled: false
 
 serviceAccount:
     create: true
@@ -37,43 +41,53 @@ readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 10
 
-autoscaling:
-  enabled: false
 
 environment_variable:
   enabled: true
   data:
+    ENV: production
     LOG_LEVEL: INFO
-    LOG_MAX_MB: "50"
-    LOG_BACKUP_COUNT: "5"
+    LOG_MAX_MB: '50'
+    LOG_BACKUP_COUNT: '5'
+    RESILTY_AGENT_CONTROL_PLANE_API_HOST: https://controlplane.resilty.io
+    RESILTY_AGENT_AUTH_SERVICE_HOST: https://auth.resilty.io
+    RESILTY_AGENT_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
+    RESILTY_AGENT_CONFIG_VERSION: '' # Inserted through helm command
 
 migration:
   enabled: false
 
 rbac:
   enabled: true
-  clusterRoleName: resiltio-clusterrole
-  rules:
-    - apiGroups: [""]
-      resources: ["pods"]
-      verbs: ["get", "list", "watch", "delete"]
-    - apiGroups: [""]
-      resources: ["pods/exec"]
-      verbs: ["get", "create"]
-    - apiGroups: ["apps"]
-      resources: ["deployments"]
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["autoscaling"]
-      resources: ["horizontalpodautoscalers"]
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["policy"]
-      resources: ["poddisruptionbudgets"]
-      verbs: ["get", "list", "watch"]
-    - apiGroups: ["metrics.k8s.io"]
-      resources: ["pods"]
-      verbs: ["get", "list"]
-  namespaces:
-    - "nginx"
+  namespaced:
+    roleName: resiltyio-rbac-ns
+    namespaces: []
+    rules:
+      - apiGroups: [""]
+        resources: ["pods"]
+        verbs: ["get", "list", "watch", "delete"]
+      - apiGroups: [""]
+        resources: ["pods/exec"]
+        verbs: ["get", "create"]
+      - apiGroups: ["apps"]
+        resources: ["deployments"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["autoscaling"]
+        resources: ["horizontalpodautoscalers"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["policy"]
+        resources: ["poddisruptionbudgets"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["metrics.k8s.io"]
+        resources: ["pods"]
+        verbs: ["get", "list"]
+
+  cluster:
+    roleName: resiltyio-rbac-cluster
+    rules:
+      - nonResourceURLs: ["/version"]
+        verbs: ["get"]
+
 
 volumeMounts:
   - name: agent-logs

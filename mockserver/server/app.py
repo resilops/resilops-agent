@@ -1,9 +1,15 @@
+import asyncio
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request, status
-from server.constants import ResiliencySuite, ResiliencySuiteStatusEnum
+from server.constants import (
+    M2M_TOKEN_RESPONSE,
+    ResiliencySuite,
+    ResiliencySuiteStatusEnum,
+)
 
 app = FastAPI(title="Control Plane API")
+suite_lock = asyncio.Lock()
 
 current_suite: Optional[ResiliencySuite] = None
 
@@ -26,13 +32,25 @@ async def health_ready():
 
 
 # -------------------------------------------------------------------
+# Auth service APIs
+# -------------------------------------------------------------------
+
+
+@app.post("/internal/api/v1/m2m/token")
+async def m2m_token(request: Request):
+    return M2M_TOKEN_RESPONSE
+
+
+# -------------------------------------------------------------------
 # Agent APIs
 # -------------------------------------------------------------------
 
 
-@app.get("/api/v1/agent/heartbeat")
-async def agent_heartbeat():
+@app.post("/api/v1/agent/heartbeat")
+async def agent_heartbeat(request: Request):
     """Simulate heartbeat endpoint."""
+    payload = await request.json()
+    print(payload)
     return {"status": "ok"}
 
 
@@ -46,15 +64,22 @@ async def agent_fetch_suite():
 
 
 @app.post("/api/v1/agent/suite/ack")
-async def agent_acknowledge_suite():
+async def agent_acknowledge_suite(request: Request):
     """Acknowledge and mark suite as processed."""
-    if current_suite is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No suite queued",
-        )
-
-    current_suite.state = ResiliencySuiteStatusEnum.PROCESSED
+    payload = await request.json()
+    print(payload)
+    async with suite_lock:
+        if current_suite is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No suite queued",
+            )
+        if current_suite.state == ResiliencySuiteStatusEnum.PROCESSED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Some other agent already picked this up",
+            )
+        current_suite.state = ResiliencySuiteStatusEnum.PROCESSED
     return {"status": "ok"}
 
 
@@ -87,7 +112,7 @@ async def queue_suite(suite: ResiliencySuite):
 # -------------------------------------------------------------------
 
 
-@app.post("/api/v1/ingest/events", status_code=status.HTTP_201_CREATED)
+@app.post("/api/v1/events", status_code=status.HTTP_201_CREATED)
 async def ingest_events(request: Request):
     payload = await request.json()
     print(payload)
@@ -99,7 +124,7 @@ async def ingest_events(request: Request):
 # -------------------------------------------------------------------
 
 
-@app.post("/api/v1/ingest/metrics", status_code=status.HTTP_201_CREATED)
+@app.post("/api/v1/metrics", status_code=status.HTTP_201_CREATED)
 async def ingest_metrics(request: Request):
     payload = await request.json()
     print(payload)

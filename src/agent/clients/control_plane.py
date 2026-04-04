@@ -1,9 +1,20 @@
 import logging
 from typing import Dict, Optional
 
+from reslib.schemas.scenario import ResiliencyScenario
+
 from agent.clients.base import BaseAPIClient
-from agent.schemas.heartbeat import HeartbeatResponseModel
-from agent.schemas.suite import ResiliencyScenario, ResiliencySuite
+from agent.clients.token import AuthServiceClient
+from agent.constants import (
+    AGENT_HEARTBEAT_PATH,
+    AGENT_SUITE_ACK_PATH,
+    AGENT_SUITE_PATH,
+    AGENT_SUITE_SCENARIO_PATH,
+    AgentHealthEnum,
+)
+from agent.schemas.config import AgentConfigModel
+from agent.schemas.heartbeat import HeartbeatRequestModel, HeartbeatResponseModel
+from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +30,10 @@ class ControlPlaneClient(BaseAPIClient):
     - Acknowledging suite
     """
 
+    def __int__(self, config: AgentConfigModel, auth_service: AuthServiceClient):
+        super().__init__(config)
+        self.auth_service = auth_service
+
     @property
     def host(self) -> str:
         """
@@ -29,7 +44,24 @@ class ControlPlaneClient(BaseAPIClient):
         """
         return self.config.control_plane_api_host
 
-    async def send_heartbeat(self) -> HeartbeatResponseModel:
+    async def get_headers(self) -> Dict[str, str]:  # noqa
+        """
+        Return HTTP headers including authorization keys.
+
+        Returns:
+            dict: HTTP headers with 'Content-Type' and API keys.
+        """
+        token_response = await self.auth_service.get_m2m_token()
+        return {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token_response.access_token}",
+        }
+
+    async def send_heartbeat(
+        self,
+        health: AgentHealthEnum = AgentHealthEnum.healthy,
+        reason: Optional[str] = None,
+    ) -> HeartbeatResponseModel:
         """
         Send a heartbeat signal to indicate the agent is alive.
 
@@ -37,7 +69,17 @@ class ControlPlaneClient(BaseAPIClient):
             Dict[str, Any]: Parsed JSON response from the control plane.
         """
         logger.debug("Sending heartbeat")
-        response: Dict = await self.request("GET", "/api/v1/agent/heartbeat")
+        payload = HeartbeatRequestModel(
+            health=health,
+            version=self.config.app_version,
+            config_version=self.config.config_version,
+            reason=reason if health != AgentHealthEnum.healthy else None,
+        )
+        response: Dict = await self.request(
+            "POST",
+            AGENT_HEARTBEAT_PATH,
+            json=payload.model_dump(mode="json"),
+        )
         return HeartbeatResponseModel(**response)
 
     async def fetch_suite(self) -> Optional[ResiliencySuite]:
@@ -49,13 +91,17 @@ class ControlPlaneClient(BaseAPIClient):
             none available.
         """
         logger.debug("Fetching resiliency suite from control plane")
-        response: Dict = await self.request("GET", "/api/v1/agent/suite")
+        response: Dict = await self.request("GET", AGENT_SUITE_PATH)
         return ResiliencySuite(**response) if response else None
 
     async def ack_suite(self, suite_id: int) -> None:
         """Acknowledge that a resiliency suite has been received."""
         logger.info("Acknowledging suite with ID: %d", suite_id)
-        await self.request("POST", "/api/v1/agent/suite/ack", json={"id": suite_id})
+        await self.request(
+            "POST",
+            AGENT_SUITE_ACK_PATH,
+            json={"id": suite_id},
+        )
         return
 
     async def fetch_scenario(
@@ -69,6 +115,9 @@ class ControlPlaneClient(BaseAPIClient):
         """
         logger.debug("Fetching resiliency scenario from control plane")
         response: Dict = await self.request(
-            "GET", f"/api/v1/agent/suite/{suite_id}/scenario/{scenario_id}"
+            "GET",
+            AGENT_SUITE_SCENARIO_PATH.format(
+                suite_id=suite_id, scenario_id=scenario_id
+            ),
         )
         return ResiliencyScenario(**response)
