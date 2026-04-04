@@ -9,8 +9,16 @@ lib: ## Install resilience-lib
 	@rsync -av --exclude='pyenv' ../resilience-lib/ ./local-libs/resilience-lib
 
 chart: ## Build local kubernetes charts
-	helm secrets template resilience-agent ../helm-charts/app -f ./helm/agent/common.yaml -f ./helm/agent/fluentbit.yaml -f ./helm/agent/local/values.yaml -f ./helm/agent/local/secrets.enc.yaml
-	helm secrets template control-plane ../helm-charts/app -f ./helm/controlplane/local/values.yaml
+	helm secrets template resilience-agent ../helm-charts/app \
+	    -f ./helm/agent/common.yaml \
+	    -f ./helm/agent/fluentbit.yaml \
+	    -f ./helm/agent/local/values.yaml \
+	    -f ./helm/agent/local/secrets.enc.yaml \
+	    --set-string 'environment_variable.data.RESILTY_AGENT_CONFIG_VERSION=1a2b3c4d'
+	    --set 'rbac.namespaced.namespaces={nginx,http-echo}'
+
+	helm secrets template control-plane ../helm-charts/app \
+	    -f ./helm/controlplane/local/values.yaml
 
 build: lib ## Build local docker containers
 	@eval $(minikube docker-env)
@@ -31,7 +39,10 @@ up: ## Deploy local charts
 		-f ./helm/agent/common.yaml \
 		-f ./helm/agent/fluentbit.yaml \
 		-f ./helm/agent/local/secrets.enc.yaml \
-		-f ./helm/agent/local/values.yaml --force
+		-f ./helm/agent/local/values.yaml \
+		--force \
+		--set-string 'environment_variable.data.RESILTY_AGENT_CONFIG_VERSION=1a2b3c4d'
+	    --set 'rbac.namespaced.namespaces={nginx,http-echo}'
 
 down: ## Remove all the deployments
 	helm uninstall -n resiltyio agent controlplane

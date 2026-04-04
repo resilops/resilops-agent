@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any, Mapping, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -43,23 +43,14 @@ class BaseAPIClient:
         """
         self.config = config
 
-    @property
-    def headers(self) -> dict[str, str]:
+    async def get_headers(self) -> Dict[str, str]:  # noqa
         """
         Return HTTP headers including authorization keys.
 
         Returns:
             dict: HTTP headers with 'Content-Type' and API keys.
         """
-        return {
-            "Content-Type": "application/json",
-            "X-Resiltyio-Agent-Id": h.get_agent_id(),
-        }
-
-    @property
-    def auth(self) -> httpx.Auth:
-        # username = key id, password = key secret
-        return httpx.BasicAuth(self.config.api_key_id, self.config.api_secret_key)
+        return {"Content-Type": "application/json"}
 
     @property
     def host(self) -> str:
@@ -75,8 +66,10 @@ class BaseAPIClient:
         self,
         method: str,
         url: str,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Mapping[str, Any]] = None,
+        auth: Optional[httpx.Auth] = None,
+        params: Optional[Dict[str, Any]] = None,
+        json: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """
         Execute a single HTTP request without retries.
@@ -86,6 +79,8 @@ class BaseAPIClient:
             url (str): Full request URL.
             params (Optional[dict]): Data as request parameters.
             json (Optional[dict]): JSON payload for request body.
+            auth (Optional[httpx.Auth]): Authorization object.
+            headers (Optional[dict]): HTTP headers with 'Content-Type' and API keys.
 
         Returns:
             Any: Parsed JSON response.
@@ -95,8 +90,15 @@ class BaseAPIClient:
             httpx.RequestError: For network-related errors.
         """
         timeout = httpx.Timeout(self.REQUEST_TIMEOUT)
+
+        default_headers = await self.get_headers()
+        headers = headers or {}
+
+        # Mutation safe for retries
+        headers = {**default_headers, **headers}
+
         async with httpx.AsyncClient(
-            headers=self.headers, auth=self.auth, timeout=timeout
+            headers=headers, auth=auth, timeout=timeout
         ) as client:
             try:
                 if method.upper() == "GET":
@@ -116,8 +118,11 @@ class BaseAPIClient:
         self,
         method: str,
         path: str,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Mapping[str, Any]] = None,
+        auth: Optional[httpx.Auth] = None,
+        params: Optional[Dict[str, Any]] = None,
+        json: Optional[Dict[str, Any]] = None,
+        max_retries: Optional[int] = None,
+        headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """
         Execute an HTTP request with automatic retries for network
@@ -128,6 +133,9 @@ class BaseAPIClient:
             path (str): API path (appended to host).
             params (Optional[dict]): Data as request parameters.
             json (Optional[dict]): JSON payload for request.
+            auth (Optional[httpx.Auth]): Authorization object.
+            max_retries (Optional[int]): Maximum number of retry attempts.
+            headers (Optional[dict]): HTTP headers with 'Content-Type' and API keys.
 
         Returns:
             Any: Parsed JSON response.
@@ -136,12 +144,18 @@ class BaseAPIClient:
             APIRequestError: If max retries exceeded or non-retriable
             error occurs.
         """
+        max_retries = max_retries or self.MAX_RETRIES
         url = h.url(self.host, path)
 
-        for attempt in range(1, self.MAX_RETRIES + 1):
+        for attempt in range(1, max_retries + 1):
             try:
                 return await self._request(
-                    method=method, url=url, params=params, json=json
+                    method=method,
+                    url=url,
+                    auth=auth,
+                    params=params,
+                    json=json,
+                    headers=headers,
                 )
             except (httpx.RequestError, APIRequestError) as exc:
                 # Stop retrying if non-retriable or max attempts reached

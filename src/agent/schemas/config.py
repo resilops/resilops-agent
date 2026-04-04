@@ -1,5 +1,25 @@
-from pydantic import Field
+from importlib.metadata import PackageNotFoundError, version
+from typing import List
+
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from reslib.exceptions import ConfigError
+
+
+def _get_app_version() -> str:
+    """Version of the installed resilience-agent package."""
+    try:
+        app_version = version("resilience-agent")
+    except PackageNotFoundError as exc:
+        raise ConfigError("Application build does not have app version") from exc
+
+    if not app_version:
+        raise ConfigError("Application build does not have app version")
+
+    return app_version
+
+
+_APP_VERSION = _get_app_version()
 
 
 class AgentConfigModel(BaseSettings):
@@ -10,12 +30,13 @@ class AgentConfigModel(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="RESILTY_AGENT_")
 
-    # API Credentials
-    api_key_id: str = Field(
-        ..., description="API Key ID for authenticating with the control plane API"
+    # Resilty Token service
+    auth_service_host: str = Field(..., description="Base URL for the auth service API")
+    auth_service_client_id: SecretStr = Field(
+        ..., description="Resilty token issuer client ID"
     )
-    api_secret_key: str = Field(
-        ..., description="Secret API Key for authenticating with the control plane API"
+    auth_service_client_secret: SecretStr = Field(
+        ..., description="Resilty token issuer client secret"
     )
 
     # Control plane hosts
@@ -25,13 +46,45 @@ class AgentConfigModel(BaseSettings):
 
     # Task intervals (in seconds)
     heartbeat_interval: int = Field(
-        10, ge=5, description="Interval between heartbeat signals to the control plane"
+        10, ge=10, description="Interval between heartbeat signals to the control plane"
     )
     runner_interval: int = Field(
         5, ge=5, description="Interval for executing queued resiliency suites"
     )
     resiliency_suite_poll_interval: int = Field(
         10,
-        ge=5,
+        ge=10,
         description="Interval for polling the control plane for new resiliency suites",
     )
+
+    # For discovery
+    namespaces: List[str] = Field(default_factory=list)
+
+    # Config version from the control plane. This is not same as app_version.
+    # This is needed to inform user if they need to redeploy the app
+    # if any configuration changes in the control plane.
+    config_version: str = Field(
+        ..., description="Version or hash of the deployed agent configuration"
+    )
+
+    @field_validator("namespaces", mode="before")
+    @classmethod
+    def parse_namespaces(cls, value: str) -> list[str]:
+        if not isinstance(value, str):
+            raise ConfigError(
+                "RESILTY_AGENT_NAMESPACES must be a comma-separated string"
+            )
+
+        namespaces = [ns.strip() for ns in value.split(",") if ns.strip()]
+
+        if not namespaces:
+            raise ConfigError(
+                "RESILTY_AGENT_NAMESPACES must contain at least one namespace"
+            )
+
+        return namespaces
+
+    @property
+    def app_version(self) -> str:
+        """Version of the installed resilience-agent package."""
+        return _APP_VERSION

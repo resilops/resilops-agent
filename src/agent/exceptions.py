@@ -24,3 +24,7 @@ class ResiliencySuiteExecutionError(Exception):
     ):
         super().__init__(message)
         self.context = context or {}
+
+
+class AuthServiceError(Exception):
+    pass

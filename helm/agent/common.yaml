@@ -2,6 +2,8 @@ namespace: resiltyio
 nameOverride: agent
 fullnameOverride: "Resilience Agent"
 
+appVersion: "1.0.0"
+
 workload:
   type: deployment
 
@@ -42,12 +44,18 @@ readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 10
 
+
 environment_variable:
   enabled: true
   data:
+    ENV: production
     LOG_LEVEL: INFO
-    LOG_MAX_MB: "50"
-    LOG_BACKUP_COUNT: "5"
+    LOG_MAX_MB: '50'
+    LOG_BACKUP_COUNT: '5'
+    RESILTY_AGENT_CONTROL_PLANE_API_HOST: https://controlplane.resilty.io
+    RESILTY_AGENT_AUTH_SERVICE_HOST: https://auth.resilty.io
+    RESILTY_AGENT_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
+    RESILTY_AGENT_CONFIG_VERSION: '' # Inserted through helm command
 
 migration:
   enabled: false
@@ -55,10 +63,8 @@ migration:
 rbac:
   enabled: true
   namespaced:
-    roleName: resiltyio-rabc-ns
-    namespaces:
-      - nginx
-      - http-echo
+    roleName: resiltyio-rbac-ns
+    namespaces: []
     rules:
       - apiGroups: [""]
         resources: ["pods"]
@@ -80,11 +86,11 @@ rbac:
         verbs: ["get", "list"]
 
   cluster:
-    roleName: resiltyio-rabc-cluster
+    roleName: resiltyio-rbac-cluster
     rules:
-      # Kubernetes version endpoint (non-resource URL)
       - nonResourceURLs: ["/version"]
         verbs: ["get"]
+
 
 volumeMounts:
   - name: agent-logs

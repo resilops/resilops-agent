@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List
 
@@ -19,3 +20,11 @@ class ResiliencySuite(BaseModel):
     suite: Dict[str, Any]
     scenarios: List[Dict[str, Any]]
     state: ResiliencySuiteStatusEnum = ResiliencySuiteStatusEnum.QUEUED
+
+
+M2M_TOKEN_RESPONSE = {
+    "access_token": "dummy_access_token_abc123xyz",
+    "expires_in": 157680000,
+    "scope": "read write",
+    "created_at": datetime.now(timezone.utc).isoformat(),
+}
