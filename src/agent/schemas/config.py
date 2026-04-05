@@ -57,9 +57,17 @@ class AgentConfigModel(BaseSettings):
         ge=10,
         description="Interval for polling the control plane for new resiliency suites",
     )
+    namespace_snapshot_interval: int = Field(
+        default=60,
+        ge=10,
+        description="Interval between snapshot signals to the control plane",
+    )
+
+    # Agents namespace
+    namespace: str = Field(..., description="Resiliency agent namespace")
 
     # For discovery
-    namespaces: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    target_namespaces: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
     # Config version from the control plane. This is not same as app_version.
     # This is needed to inform user if they need to redeploy the app
@@ -68,19 +76,19 @@ class AgentConfigModel(BaseSettings):
         ..., description="Version or hash of the deployed agent configuration"
     )
 
-    @field_validator("namespaces", mode="before")
+    @field_validator("target_namespaces", mode="before")
     @classmethod
-    def parse_namespaces(cls, value: str) -> List[str]:
+    def parse_target_namespaces(cls, value: str) -> List[str]:
         if not isinstance(value, str):
             raise ConfigError(
-                "RESILTY_AGENT_NAMESPACES must be a comma-separated string"
+                "RESILTY_AGENT_TARGET_NAMESPACES must be a comma-separated string"
             )
 
         namespaces = [ns.strip() for ns in value.split(",") if ns.strip()]
 
         if not namespaces:
             raise ConfigError(
-                "RESILTY_AGENT_NAMESPACES must contain at least one namespace"
+                "RESILTY_AGENT_TARGET_NAMESPACES must contain at least one namespace"
             )
 
         return namespaces

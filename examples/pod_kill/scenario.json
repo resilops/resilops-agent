@@ -65,9 +65,9 @@
             "observer": {
                 "name": "measure_endpoint_latency",
                 "config": {
-                    "sampling_interval_seconds": 5,
-                    "warmup_period_seconds": 5,
-                    "grace_period_seconds": 5
+                    "sampling_interval_seconds": 4,
+                    "warmup_period_seconds": 10,
+                    "grace_period_seconds": 10
                 },
                 "kwargs": {
                     "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",

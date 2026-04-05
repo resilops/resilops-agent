@@ -11,6 +11,8 @@ class EventEnum(Enum):
     SUITE_EXECUTING = "res:agent:event:suite:executing"
     SUITE_EXECUTION_SUCCESS = "res:agent:event:suite:execution:success"
     SUITE_EXECUTION_FAILED = "res:agent:event:suite:execution:failed"
+    DISCOVERY_SUCCESS = "res:agent:event:discovery:success"
+    DISCOVERY_FAILED = "res:agent:event:discovery:failed"
 
 
 class EventPayload(BaseModel):

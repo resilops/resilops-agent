@@ -94,6 +94,13 @@ async def agent_fetch_scenario(suite_id: int, scenario_id: int):
     return current_suite.scenarios[0]
 
 
+@app.post("/api/v1/agent/cluster/snapshot")
+async def cluster_snapshot(request: Request):
+    payload = await request.json()
+    print("*****workload*****", payload)
+    return {"status": "ok"}
+
+
 # -------------------------------------------------------------------
 # Queue APIs
 # -------------------------------------------------------------------

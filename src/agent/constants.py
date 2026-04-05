@@ -8,6 +8,9 @@ AGENT_HEARTBEAT_PATH = "/api/v1/agent/heartbeat"
 AGENT_SUITE_PATH = "/api/v1/agent/suite"
 AGENT_SUITE_ACK_PATH = "/api/v1/agent/suite/ack"
 AGENT_SUITE_SCENARIO_PATH = "/api/v1/agent/suite/{suite_id}/scenario/{scenario_id}"
+AGENT_CLUSTER_SNAPSHOT: str = "/api/v1/agent/cluster/snapshot"
+
+DISCOVERY_k8_LEASE_NAME: str = "resilience-agent-snapshot-discovery-lease"
 
 
 class AgentOAuthScopes(Enum):

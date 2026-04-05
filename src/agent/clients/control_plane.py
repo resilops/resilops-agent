@@ -6,6 +6,7 @@ from reslib.schemas.scenario import ResiliencyScenario
 from agent.clients.base import BaseAPIClient
 from agent.clients.token import AuthServiceClient
 from agent.constants import (
+    AGENT_CLUSTER_SNAPSHOT,
     AGENT_HEARTBEAT_PATH,
     AGENT_SUITE_ACK_PATH,
     AGENT_SUITE_PATH,
@@ -14,6 +15,7 @@ from agent.constants import (
 )
 from agent.schemas.config import AgentConfigModel
 from agent.schemas.heartbeat import HeartbeatRequestModel, HeartbeatResponseModel
+from agent.schemas.snapshot import ClusterSnapshotRequestModel
 from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
@@ -121,3 +123,20 @@ class ControlPlaneClient(BaseAPIClient):
             ),
         )
         return ResiliencyScenario(**response)
+
+    async def cluster_snapshot(self, payload: ClusterSnapshotRequestModel) -> None:
+        """
+        Send a cluster snapshot to the control plane.
+
+        This method submits the current Kubernetes cluster state to the control
+        plane via a POST request. The snapshot includes a unique synchronization
+        UUID and the state of all namespaces, which can be used for reconciliation,
+        auditing, or state tracking.
+        """
+        logger.debug("Cluster snapshot from control plane")
+        await self.request(
+            "POST",
+            AGENT_CLUSTER_SNAPSHOT,
+            json=payload.model_dump(exclude_none=True, mode="json"),
+        )
+        return None

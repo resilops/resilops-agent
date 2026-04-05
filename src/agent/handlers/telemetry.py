@@ -29,8 +29,8 @@ class AgentTelemetry:
         *,
         name: str,
         payload: Any,
-        run_id: int,
-        suite_id: int,
+        run_id: Optional[int] = None,
+        suite_id: Optional[int] = None,
         scenario_id: Optional[int] = None,
     ) -> None:
         """
@@ -63,8 +63,8 @@ class AgentTelemetry:
         self,
         *,
         event: EventPayload | ReslibEventPayload,
-        run_id: int,
-        suite_id: int,
+        run_id: Optional[int] = None,
+        suite_id: Optional[int] = None,
         scenario_id: Optional[int] = None,
     ) -> None:
         """

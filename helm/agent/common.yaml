@@ -51,7 +51,8 @@ environment_variable:
     LOG_BACKUP_COUNT: '5'
     RESILTY_AGENT_CONTROL_PLANE_API_HOST: https://controlplane.resilty.io
     RESILTY_AGENT_AUTH_SERVICE_HOST: https://auth.resilty.io
-    RESILTY_AGENT_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
+    RESILTY_AGENT_TARGET_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
+    RESILTY_AGENT_NAMESPACE: '{{ .Release.Namespace }}'
     RESILTY_AGENT_CONFIG_VERSION: '' # Inserted through helm command
 
 migration:
@@ -81,13 +82,18 @@ rbac:
       - apiGroups: ["metrics.k8s.io"]
         resources: ["pods"]
         verbs: ["get", "list"]
-
   cluster:
     roleName: resiltyio-rbac-cluster
     rules:
       - nonResourceURLs: ["/version"]
         verbs: ["get"]
-
+  current:
+    # Applies to the current namespace
+    roleName: resiltyio-agent-rbac
+    rules:
+      - apiGroups: ["coordination.k8s.io"]
+        resources: ["leases"]
+        verbs: ["get", "create", "update", "patch"]
 
 volumeMounts:
   - name: agent-logs

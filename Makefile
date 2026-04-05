@@ -35,6 +35,7 @@ lib: ## Install resilience-lib
 
 chart: ## Build local kubernetes charts
 	helm secrets template $(AGENT_RELEASE) $(APP_CHART) \
+	    -n $(NAMESPACE) \
 		$(HELM_AGENT_ARGS)
 
 	helm secrets template $(CONTROL_RELEASE) $(APP_CHART) \

@@ -32,3 +32,7 @@ class AuthServiceError(Exception):
 
 class ConfigError(Exception):
     pass
+
+
+class NotLeaderError(Exception):
+    pass

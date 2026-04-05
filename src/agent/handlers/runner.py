@@ -21,11 +21,7 @@ class ResiliencySuiteRunner:
         - Surface execution failures with context
     """
 
-    def __init__(
-        self,
-        client: ControlPlaneClient,
-        telemetry: AgentTelemetry,
-    ) -> None:
+    def __init__(self, client: ControlPlaneClient, telemetry: AgentTelemetry):
         self.client = client
         self.telemetry = telemetry
 
