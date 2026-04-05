@@ -54,7 +54,6 @@ class KubernetesLeaderElection:
             ApiException: If Kubernetes returns an unexpected API error.
         """
         now = self._now()
-
         try:
             lease = self._read_lease()
         except ApiException as exc:

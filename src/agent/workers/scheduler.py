@@ -44,7 +44,6 @@ class ResiliencySuiteSchedulerWorker(PeriodicWorker):
         super().__init__(config, state_handler, telemetry, shutdown_event)
         self.client = client
 
-    @property
     def execution_interval(self) -> int:
         """
         Interval (in seconds) at which the control plane is polled.

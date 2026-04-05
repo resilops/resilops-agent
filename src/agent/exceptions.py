@@ -15,17 +15,6 @@ class APIRequestError(Exception):
         self.context = context or {}
 
 
-class ResiliencySuiteExecutionError(Exception):
-
-    def __init__(
-        self,
-        message: str,
-        context: Optional[Dict[str, Any]] = None,
-    ):
-        super().__init__(message)
-        self.context = context or {}
-
-
 class AuthServiceError(Exception):
     pass
 

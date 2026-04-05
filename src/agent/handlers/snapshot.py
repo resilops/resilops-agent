@@ -50,14 +50,15 @@ class NamespaceSnapshotHandler:
         for index in range(0, len(items), batch_size):
             yield list(items[index : index + batch_size])
 
-    def _ensure_leadership(self) -> None:
+    async def _ensure_leadership(self) -> None:
         """
         Ensure this instance currently holds the Kubernetes leader lease.
 
         Raises:
             NotLeaderError: If this instance is not the current leader.
         """
-        if not self.leader_election.try_acquire_or_renew():
+        is_leader = await asyncio.to_thread(self.leader_election.try_acquire_or_renew)
+        if not is_leader:
             raise NotLeaderError("Not a Kubernetes leader instance")
 
     async def _sleep_with_jitter(self) -> None:
@@ -76,7 +77,7 @@ class NamespaceSnapshotHandler:
             NotLeaderError: If leadership is not held at execution time.
             Exception: Propagates discovery or control-plane errors.
         """
-        self._ensure_leadership()
+        await self._ensure_leadership()
 
         sync_uuid = uuid.uuid4()
         namespaces: List[str] = random.sample(
@@ -85,9 +86,9 @@ class NamespaceSnapshotHandler:
         )
 
         for namespace_batch in self._chunked(namespaces, self.DISCOVERY_BATCH_SIZE):
-            self._ensure_leadership()
+            await self._ensure_leadership()
             logger.info(
-                "Snapshot discovery: %s for namespaces: %s", sync_uuid, namespaces
+                "Snapshot discovery: %s for namespaces: %s", sync_uuid, namespace_batch
             )
             discovery_config = DiscoveryNamespaceConfigSchema(
                 namespaces=namespace_batch,
@@ -104,7 +105,7 @@ class NamespaceSnapshotHandler:
                 await self.client.cluster_snapshot(payload=payload)
 
             except Exception as exc:
-                exc.context = {"sync_uuid": sync_uuid}
+                setattr(exc, "context", {"sync_uuid": sync_uuid})
                 raise
 
             await self._sleep_with_jitter()

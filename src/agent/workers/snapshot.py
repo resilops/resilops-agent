@@ -26,6 +26,8 @@ class NamespacesSnapshotWorker(PeriodicWorker):
     """
 
     WORKER_NAME: str = "namespaces_snapshot"
+    STARTUP_RETRY_INTERVAL = 20
+    STARTUP_RETRY_LIMIT = 5
 
     def __init__(
         self,
@@ -47,18 +49,31 @@ class NamespacesSnapshotWorker(PeriodicWorker):
             snapshot_handler: Handler responsible for performing namespace snapshots.
             leader_election: KubernetesLeaderElection instance.
         """
-        super().__init__(config, state_handler, telemetry, shutdown_event)
+        super().__init__(
+            config,
+            state_handler,
+            telemetry,
+            shutdown_event,
+        )
         self.snapshot_handler = snapshot_handler
         self.leader_election = leader_election
+        self._startup_retry_attempts: int = 0
+        self._has_succeeded_once = False
 
-    @property
     def execution_interval(self) -> int:
         """
-        Interval (in seconds) between consecutive snapshot executions.
+        Return the current sleep interval.
 
-        Returns:
-            Configured namespace snapshot interval.
+        Before the first successful execution, retry more frequently for a
+        limited number of attempts. After that, fall back to the normal
+        execution interval.
         """
+        if (
+            not self._has_succeeded_once
+            and self._startup_retry_attempts < self.STARTUP_RETRY_LIMIT
+        ):
+            self._startup_retry_attempts += 1
+            return self.STARTUP_RETRY_INTERVAL
         return self.config.namespace_snapshot_interval
 
     async def should_execute(self) -> bool:
@@ -66,8 +81,8 @@ class NamespacesSnapshotWorker(PeriodicWorker):
         Determine whether the worker should execute in the current cycle.
 
         The worker executes only when:
-        - The agent is healthy
-        - The runner is idle
+        - the agent is healthy
+        - this instance successfully acquires or renews the leader lease
 
         Returns:
             True if execution should proceed, otherwise False.
@@ -75,7 +90,7 @@ class NamespacesSnapshotWorker(PeriodicWorker):
         if not self.state_handler.agent.is_healthy:
             return False
 
-        return self.leader_election.try_acquire_or_renew()
+        return await asyncio.to_thread(self.leader_election.try_acquire_or_renew)
 
     async def execute_iteration(self) -> Optional[Dict[str, str]]:
         """
@@ -99,6 +114,7 @@ class NamespacesSnapshotWorker(PeriodicWorker):
         Args:
             context: Execution context containing metadata such as sync UUID.
         """
+        self._has_succeeded_once = True
         sync_uuid = context.get("sync_uuid")
         self.telemetry.emit_event(
             event=EventPayload(

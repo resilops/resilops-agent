@@ -4,7 +4,6 @@ from reslib.runtime.scenario import execute_resilience_scenario
 from reslib.schemas.scenario import ResiliencyScenario
 
 from agent.clients.control_plane import ControlPlaneClient
-from agent.exceptions import ResiliencySuiteExecutionError
 from agent.handlers.telemetry import AgentTelemetry, ResLibTelemetryWithContext
 from agent.schemas.suite import ResiliencySuite
 
@@ -49,11 +48,5 @@ class ResiliencySuiteRunner:
                 )
             except Exception as exc:
                 logger.exception("Suite execution failed")
-                raise ResiliencySuiteExecutionError(
-                    "Suite execution failed",
-                    context={
-                        "suite": suite,
-                        "error": exc,
-                        "scenario_id": scenario_id,
-                    },
-                ) from exc
+                setattr(exc, "context", {"suite": suite, "scenario_id": scenario_id})
+                raise

@@ -58,8 +58,8 @@ class AgentConfigModel(BaseSettings):
         description="Interval for polling the control plane for new resiliency suites",
     )
     namespace_snapshot_interval: int = Field(
-        default=60,
-        ge=10,
+        default=10800,  # 3 hours interval
+        ge=10800,
         description="Interval between snapshot signals to the control plane",
     )
 

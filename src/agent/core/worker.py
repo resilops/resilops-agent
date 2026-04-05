@@ -10,7 +10,6 @@ from agent.schemas.config import AgentConfigModel
 class BaseWorker(ABC):
     """Abstract base class for all background workers."""
 
-    @property
     @abstractmethod
     def execution_interval(self) -> int:
         """Interval between worker executions in seconds."""
@@ -41,7 +40,7 @@ class BaseWorker(ABC):
         """Run the worker's main loop until stopped."""
 
 
-class PeriodicWorker(BaseWorker):
+class PeriodicWorker(BaseWorker):  # noqa
     """Concrete implementation of a periodic background worker."""
 
     WORKER_NAME: str = "base_worker"
@@ -74,6 +73,10 @@ class PeriodicWorker(BaseWorker):
     async def run_continuously(self) -> None:
         """Main execution loop for the periodic worker."""
         while not self.shutdown_event.is_set():
-            await asyncio.sleep(self.execution_interval)
+            await asyncio.sleep(self.execution_interval())
+
+            if self.shutdown_event.is_set():
+                break
+
             if await self.should_execute():
                 await self._execute_safely()
