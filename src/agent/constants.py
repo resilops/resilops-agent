@@ -1,8 +1,7 @@
 from enum import Enum
-from typing import List
 
 CLIENT_CREDENTIALS_GRANT_TYPE: str = "client_credentials"
-AUTH_SERVICE_M2M_TOKEN_ISSUE_PATH: str = "/internal/api/v1/m2m/token"
+AUTH_SERVICE_M2M_TOKEN_ISSUE_PATH: str = "/api/v1/m2m/token"
 
 AGENT_HEARTBEAT_PATH = "/api/v1/agent/heartbeat"
 AGENT_SUITE_PATH = "/api/v1/agent/suite"
@@ -24,8 +23,8 @@ class AgentOAuthScopes(Enum):
     cluster_snapshot_upsert = "res:oauth:scope:agent:cluster:snapshot:upsert"
 
     @classmethod
-    def values(cls) -> List[str]:
-        return [scope.value for scope in cls]
+    def scopes(cls) -> str:
+        return " ".join([scope.value for scope in cls])
 
 
 class AgentHealthEnum(str, Enum):

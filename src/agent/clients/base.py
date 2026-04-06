@@ -69,6 +69,7 @@ class BaseAPIClient:
         auth: Optional[httpx.Auth] = None,
         params: Optional[Dict[str, Any]] = None,
         json: Optional[Dict[str, Any]] = None,
+        data: Optional[Any] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
         """
@@ -79,6 +80,7 @@ class BaseAPIClient:
             url (str): Full request URL.
             params (Optional[dict]): Data as request parameters.
             json (Optional[dict]): JSON payload for request body.
+            data (Optional[Any]): Data as request body.
             auth (Optional[httpx.Auth]): Authorization object.
             headers (Optional[dict]): HTTP headers with 'Content-Type' and API keys.
 
@@ -101,10 +103,9 @@ class BaseAPIClient:
             headers=headers, auth=auth, timeout=timeout
         ) as client:
             try:
-                if method.upper() == "GET":
-                    response = await client.request(method, url, params=params)
-                else:
-                    response = await client.request(method, url, json=json)
+                response = await client.request(
+                    method, url, params=params, json=json, data=data
+                )
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPStatusError as exc:
@@ -121,6 +122,7 @@ class BaseAPIClient:
         auth: Optional[httpx.Auth] = None,
         params: Optional[Dict[str, Any]] = None,
         json: Optional[Dict[str, Any]] = None,
+        data: Optional[Any] = None,
         max_retries: Optional[int] = None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Any:
@@ -133,6 +135,7 @@ class BaseAPIClient:
             path (str): API path (appended to host).
             params (Optional[dict]): Data as request parameters.
             json (Optional[dict]): JSON payload for request.
+            data (Optional[Any]): Data as request body.
             auth (Optional[httpx.Auth]): Authorization object.
             max_retries (Optional[int]): Maximum number of retry attempts.
             headers (Optional[dict]): HTTP headers with 'Content-Type' and API keys.
@@ -155,6 +158,7 @@ class BaseAPIClient:
                     auth=auth,
                     params=params,
                     json=json,
+                    data=data,
                     headers=headers,
                 )
             except (httpx.RequestError, APIRequestError) as exc:

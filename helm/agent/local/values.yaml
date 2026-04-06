@@ -4,34 +4,23 @@ image:
 
 replicaCount: 2
 
-environment_variable:
+envVar:
   enabled: true
   data:
     ENV: local
     RESILTY_AGENT_CONTROL_PLANE_API_HOST: http://controlplane.resiltyio.svc.cluster.local:8000
     RESILTY_AGENT_AUTH_SERVICE_HOST: http://controlplane.resiltyio.svc.cluster.local:8000
 
-fluentbit:
-  config:
-    outputs: |
-      # Output for events
-      [OUTPUT]
-          Name          http
-          Match         resilty.agent.events
-          Host          controlplane.resiltyio.svc.cluster.local
-          Port          8000
-          URI           /api/v1/ingest/events
-          Format        json
-          tls           Off
-          Retry_Limit   3
 
-      # Output for metrics
-      [OUTPUT]
-          Name          http
-          Match         resilty.agent.metrics
-          Host          controlplane.resiltyio.svc.cluster.local
-          Port          8000
-          URI           /api/v1/ingest/metrics
-          Format        json
-          tls           Off
-          Retry_Limit   3
+sidecar:
+  env:
+    - name: FLUENTBIT_REMOTE_HOST
+      value: controlplane.resiltyio.svc.cluster.local
+    - name: FLUENTBIT_REMOTE_PORT
+      value: "8000"
+    - name: FLUENTBIT_REMOTE_TLS
+      value: "Off"
+    - name: FLUENTBIT_OAUTH_TOKEN_URL
+      value: "https://controlplane.resiltyio.svc.cluster.local/api/v1/m2m/token"
+    - name: FLUENTBIT_OAUTH_SCOPES
+      value: "res:oauth:scope:events:create res:oauth:scope:metrics:create"

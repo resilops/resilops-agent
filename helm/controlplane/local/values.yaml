@@ -41,7 +41,7 @@ readinessProbe:
   failureThreshold: 3
 
 
-environment_variable:
+envVar:
   enabled: true
   data:
     ENV: local

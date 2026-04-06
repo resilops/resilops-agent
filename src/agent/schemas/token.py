@@ -9,7 +9,8 @@ class M2MAccessTokenResponse(BaseModel):
 
     access_token: str = Field(..., description="Short lived access token")
     expires_in: int = Field(..., description="Expiration in seconds")
-    scope: Optional[str] = Field(..., description="Requested scopes")
+    token_type: str = Field(..., description="Token type")
+    scope: Optional[str] = Field(default=None, description="Requested scopes")
 
     # internal field (not from API)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

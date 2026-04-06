@@ -10,8 +10,8 @@ autoscaling:
   enabled: false
 
 serviceAccount:
-    create: true
-    name: agent-sa
+  create: true
+  name: agent-sa
 
 image:
   repository: resilience-agent
@@ -41,19 +41,109 @@ readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 10
 
-
-environment_variable:
-  enabled: true
+envVar:
   data:
     ENV: production
     LOG_LEVEL: INFO
-    LOG_MAX_MB: '50'
-    LOG_BACKUP_COUNT: '5'
+    LOG_MAX_MB: "50"
+    LOG_BACKUP_COUNT: "5"
     RESILTY_AGENT_CONTROL_PLANE_API_HOST: https://controlplane.resilty.io
     RESILTY_AGENT_AUTH_SERVICE_HOST: https://auth.resilty.io
     RESILTY_AGENT_TARGET_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
     RESILTY_AGENT_NAMESPACE: '{{ .Release.Namespace }}'
-    RESILTY_AGENT_CONFIG_VERSION: '' # Inserted through helm command
+    RESILTY_AGENT_CONFIG_VERSION: ""
+
+existingSecret:
+  name: resilty-agent-secrets
+  app:
+    - envName: RESILTY_AGENT_AUTH_SERVICE_CLIENT_ID
+      secretKey: OAUTH_CLIENT_ID
+    - envName: RESILTY_AGENT_AUTH_SERVICE_CLIENT_SECRET
+      secretKey: OAUTH_CLIENT_SECRET
+
+file_config:
+  enabled: true
+  sidecar:
+    data:
+      fluent-bit.conf: |
+        [SERVICE]
+            Flush                     5
+            Daemon                    Off
+            Log_Level                 info
+            Parsers_File              parsers.conf
+            storage.path              /fluent-bit/state
+            storage.sync              normal
+            storage.checksum          off
+            storage.backlog.mem_limit 10MB
+            scheduler.base            3
+            scheduler.cap             30
+        @INCLUDE input.conf
+        @INCLUDE filter.conf
+        @INCLUDE output.conf
+
+      parsers.conf: |
+        [PARSER]
+            Name        json
+            Format      json
+            Time_Key    time
+            Time_Format %Y-%m-%d %H:%M:%S,%L
+            Time_Keep   On
+
+      input.conf: |
+        [INPUT]
+            Name              tail
+            Path              /var/log/agent/agent.log*
+            Parser            json
+            Tag               resilty.agent
+            Refresh_Interval  5
+            Skip_Long_Lines   On
+            Mem_Buf_Limit     10MB
+            DB                /fluent-bit/state/agent-logs.db
+            storage.type      filesystem
+
+      filter.conf: |
+        [FILTER]
+            Name          rewrite_tag
+            Match         resilty.agent
+            Rule          $type ^event$ resilty.agent.events true
+
+        [FILTER]
+            Name          rewrite_tag
+            Match         resilty.agent
+            Rule          $type ^metrics$ resilty.agent.metrics true
+
+      output.conf: |
+        [OUTPUT]
+            Name                   http
+            Match                  resilty.agent.events
+            Host                   ${FLUENTBIT_REMOTE_HOST}
+            Port                   ${FLUENTBIT_REMOTE_PORT}
+            URI                    /api/v1/ingest/events
+            Format                 json
+            tls                    ${FLUENTBIT_REMOTE_TLS}
+            Retry_Limit            20
+            oauth2.enable          true
+            oauth2.token_url       ${FLUENTBIT_OAUTH_TOKEN_URL}
+            oauth2.client_id       ${FLUENTBIT_OAUTH_CLIENT_ID}
+            oauth2.client_secret   ${FLUENTBIT_OAUTH_CLIENT_SECRET}
+            oauth2.auth_method     basic
+            oauth2.scope           ${FLUENTBIT_OAUTH_SCOPES}
+
+        [OUTPUT]
+            Name                   http
+            Match                  resilty.agent.metrics
+            Host                   ${FLUENTBIT_REMOTE_HOST}
+            Port                   ${FLUENTBIT_REMOTE_PORT}
+            URI                    /api/v1/ingest/metrics
+            Format                 json
+            tls                    ${FLUENTBIT_REMOTE_TLS}
+            Retry_Limit            10
+            oauth2.enable          true
+            oauth2.token_url       ${FLUENTBIT_OAUTH_TOKEN_URL}
+            oauth2.client_id       ${FLUENTBIT_OAUTH_CLIENT_ID}
+            oauth2.client_secret   ${FLUENTBIT_OAUTH_CLIENT_SECRET}
+            oauth2.auth_method     basic
+            oauth2.scope           ${FLUENTBIT_OAUTH_SCOPES}
 
 migration:
   enabled: false
@@ -88,7 +178,6 @@ rbac:
       - nonResourceURLs: ["/version"]
         verbs: ["get"]
   current:
-    # Applies to the current namespace
     roleName: resiltyio-agent-rbac
     rules:
       - apiGroups: ["coordination.k8s.io"]
@@ -99,11 +188,66 @@ volumeMounts:
   - name: agent-logs
     mountPath: /var/log/agent
 
-
 volumes:
   - name: agent-logs
     emptyDir:
       sizeLimit: 500Mi
 
+  - name: fluentbit-state
+    emptyDir: {}
 
-containerCommand: ["poetry","run","resilience-agent"]
+  - name: fluentbit-fileconfig
+    configMap:
+      name: agent-sidecar-fileconfig
+
+sidecar:
+  enabled: true
+  name: fluent-bit
+  image:
+    repository: fluent/fluent-bit
+    tag: "5.0"
+  env:
+    - name: FLUENTBIT_REMOTE_HOST
+      value: controlplane.resilty.io
+    - name: FLUENTBIT_REMOTE_PORT
+      value: "443"
+    - name: FLUENTBIT_REMOTE_TLS
+      value: "On"
+    - name: FLUENTBIT_OAUTH_TOKEN_URL
+      value: "https://controlplane.resilty.io/api/v1/m2m/token"
+    - name: FLUENTBIT_OAUTH_SCOPES
+      value: "res:oauth:scope:events:create res:oauth:scope:metrics:create"
+  existingSecret:
+    name: resilty-agent-secrets
+    data:
+      - envName: FLUENTBIT_OAUTH_CLIENT_ID
+        secretKey: OAUTH_CLIENT_ID
+      - envName: FLUENTBIT_OAUTH_CLIENT_SECRET
+        secretKey: OAUTH_CLIENT_SECRET
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  command:
+    - /fluent-bit/bin/fluent-bit
+    - -c
+    - /fluent-bit/etc/fluent-bit.conf
+
+  volumeMounts:
+    - name: fluentbit-fileconfig
+      mountPath: /fluent-bit/etc
+      readOnly: true
+    - name: agent-logs
+      mountPath: /var/log/agent
+      readOnly: true
+    - name: fluentbit-state
+      mountPath: /fluent-bit/state
+
+containerCommand:
+  - "poetry"
+  - "run"
+  - "resilience-agent"

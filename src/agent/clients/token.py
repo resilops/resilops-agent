@@ -66,10 +66,11 @@ class AuthServiceClient(BaseAPIClient):
                         self.config.auth_service_client_id.get_secret_value(),
                         self.config.auth_service_client_secret.get_secret_value(),
                     ),
-                    params={
-                        "scope": AgentOAuthScopes.values(),
+                    data={
+                        "scope": AgentOAuthScopes.scopes(),
                         "grant_type": CLIENT_CREDENTIALS_GRANT_TYPE,
                     },
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
                     max_retries=0,  # No retries for post
                 )
             except Exception:

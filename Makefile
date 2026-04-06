@@ -1,5 +1,10 @@
 .DEFAULT_GOAL := help
-.PHONY: help lib chart build up down forward logs nginx-up nginx-down http-up http-down
+.PHONY: help lib chart build secrets up down forward logs nginx-up nginx-down http-up http-down
+
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
 
 NAMESPACE ?= resiltyio
 APP_CHART ?= ../helm-charts/app
@@ -7,17 +12,14 @@ AGENT_RELEASE ?= agent
 CONTROL_RELEASE ?= controlplane
 AGENT_VERSION ?= 1a2b3c4d
 RBAC_NAMESPACES ?= nginx,http-echo
+SECRETS_NAME ?= resilty-agent-secrets
 
 AGENT_COMMON_VALUES := ./helm/agent/common.yaml
-AGENT_FLUENTBIT_VALUES := ./helm/agent/fluentbit.yaml
 AGENT_LOCAL_VALUES := ./helm/agent/local/values.yaml
-AGENT_LOCAL_SECRETS := ./helm/agent/local/secrets.enc.yaml
 CONTROL_LOCAL_VALUES := ./helm/controlplane/local/values.yaml
 
 HELM_AGENT_ARGS := \
 	-f $(AGENT_COMMON_VALUES) \
-	-f $(AGENT_FLUENTBIT_VALUES) \
-	-f $(AGENT_LOCAL_SECRETS) \
 	-f $(AGENT_LOCAL_VALUES) \
 	--set-string 'environment_variable.data.RESILTY_AGENT_CONFIG_VERSION=$(AGENT_VERSION)' \
 	--set 'rbac.namespaced.namespaces={$(RBAC_NAMESPACES)}'
@@ -34,11 +36,12 @@ lib: ## Install resilience-lib
 	@rsync -av --exclude='pyenv' ../resilience-lib/ ./local-libs/resilience-lib
 
 chart: ## Build local kubernetes charts
-	helm secrets template $(AGENT_RELEASE) $(APP_CHART) \
-	    -n $(NAMESPACE) \
+	helm template $(AGENT_RELEASE) $(APP_CHART) \
+		-n $(NAMESPACE) \
 		$(HELM_AGENT_ARGS)
 
-	helm secrets template $(CONTROL_RELEASE) $(APP_CHART) \
+	helm template $(CONTROL_RELEASE) $(APP_CHART) \
+		-n $(NAMESPACE) \
 		$(HELM_CONTROL_ARGS)
 
 build: lib ## Build local docker containers
@@ -47,15 +50,23 @@ build: lib ## Build local docker containers
 	docker build --no-cache -f ./docker/AgentDockerfile --target local -t resilience-agent:local .
 	docker build --no-cache -f ./docker/MockserverDockerfile -t resilience-agent-cp:local .
 
+secrets: ## Create/update local agent secret from .env
+	@test -n "$(OAUTH_CLIENT_ID)" || (echo "OAUTH_CLIENT_ID is not set"; exit 1)
+	@test -n "$(OAUTH_CLIENT_SECRET)" || (echo "OAUTH_CLIENT_SECRET is not set"; exit 1)
+	kubectl -n $(NAMESPACE) create secret generic $(SECRETS_NAME) \
+		--from-literal=OAUTH_CLIENT_ID="$(OAUTH_CLIENT_ID)" \
+		--from-literal=OAUTH_CLIENT_SECRET="$(OAUTH_CLIENT_SECRET)" \
+		--dry-run=client -o yaml | kubectl apply -f -
+
 up: ## Deploy local charts
 	@echo "🚀 Deploying Resilience Agent Control Plane Locally"
-	helm secrets upgrade --install $(CONTROL_RELEASE) $(APP_CHART) \
+	helm upgrade --install $(CONTROL_RELEASE) $(APP_CHART) \
 		-n $(NAMESPACE) \
 		$(HELM_CONTROL_ARGS) \
 		--create-namespace --force
 
 	@echo "🚀 Deploying Resilience Agent Locally"
-	helm secrets upgrade --install $(AGENT_RELEASE) $(APP_CHART) \
+	helm upgrade --install $(AGENT_RELEASE) $(APP_CHART) \
 		-n $(NAMESPACE) \
 		$(HELM_AGENT_ARGS) \
 		--force
@@ -68,7 +79,6 @@ forward: ## Port forward control plane to localhost
 
 logs: ## Log stream of agent
 	kubectl logs -f $$(kubectl get pod -n $(NAMESPACE) -l app.kubernetes.io/name=$(AGENT_RELEASE) -o jsonpath='{.items[0].metadata.name}') -n $(NAMESPACE)
-
 
 nginx-up: ## Deploy nginx with hpa
 	@echo "🐳 Building nginx container"

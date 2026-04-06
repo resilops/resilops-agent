@@ -36,7 +36,7 @@ async def health_ready():
 # -------------------------------------------------------------------
 
 
-@app.post("/internal/api/v1/m2m/token")
+@app.post("/api/v1/m2m/token")
 async def m2m_token(request: Request):
     return M2M_TOKEN_RESPONSE
 
@@ -96,8 +96,6 @@ async def agent_fetch_scenario(suite_id: int, scenario_id: int):
 
 @app.post("/api/v1/agent/cluster/snapshot")
 async def cluster_snapshot(request: Request):
-    payload = await request.json()
-    print("*****workload*****", payload)
     return {"status": "ok"}
 
 
