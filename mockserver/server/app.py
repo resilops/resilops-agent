@@ -96,6 +96,8 @@ async def agent_fetch_scenario(suite_id: int, scenario_id: int):
 
 @app.post("/api/v1/agent/cluster/snapshot")
 async def cluster_snapshot(request: Request):
+    payload = await request.json()
+    print(payload)
     return {"status": "ok"}
 
 

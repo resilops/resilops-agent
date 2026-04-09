@@ -14,7 +14,7 @@
         {
             "id": 1,
             "suite_id": 1,
-            "name": "POD_KILL",
+            "name": "pod_kill",
             "title": "Do we remain available in face of pod going down?",
             "description": "We expect Kubernetes to handle the situation gracefully when a pod goes down",
             "template": {
@@ -28,36 +28,36 @@
                 {
                     "type": "guardrail",
                     "name": "ensure_workload_steady",
-                    "kwargs": {}
+                    "params": {}
                 },
                 {
                     "type": "guardrail",
                     "name": "ensure_hpa_not_at_max_replicas",
-                    "kwargs": {}
+                    "params": {}
                 },
                 {
                     "type": "guardrail",
                     "name": "validate_min_remaining_replicas",
-                    "kwargs": {}
+                    "params": {}
                 },
                 {
                     "type": "guardrail",
                     "name": "ensure_pdb_not_violated",
-                    "kwargs": {
+                    "params": {
                         "allow_missing_pdb": true
                     }
                 },
                 {
                     "type": "action",
                     "name": "terminate_pods",
-                    "kwargs": {
+                    "params": {
                         "timeout_seconds":200
                     }
                 },
                 {
                     "type": "rollback",
                     "name": "wait_until_pod_respawn",
-                    "kwargs": {
+                    "params": {
                         "timeout_seconds": 300
                     }
                 }
@@ -69,7 +69,7 @@
                     "warmup_period_seconds": 10,
                     "grace_period_seconds": 10
                 },
-                "kwargs": {
+                "params": {
                     "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
                     "requests_per_interval": 3,
                     "request_timeout_seconds": 5

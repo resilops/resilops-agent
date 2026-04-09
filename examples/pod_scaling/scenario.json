@@ -14,7 +14,7 @@
         {
             "id": 1,
             "suite_id": 1,
-            "name": "HPA_SCALE_ON_CPU_STRESS",
+            "name": "hpa_cpu_stress",
             "title": "Do the application scale according to the customer needs?",
             "description": "We expect HPA is configured and kubernetes pods scale within a timeframe.",
             "template": {
@@ -31,44 +31,44 @@
                 {
                     "type": "guardrail",
                     "name": "validate_metric_and_resource",
-                    "kwargs": {}
+                    "params": {}
                 },
                 {
                     "type": "guardrail",
                     "name": "ensure_hpa_exists",
-                    "kwargs": {}
+                    "params": {}
                 },
                 {
                     "type": "guardrail",
                     "name": "validate_hpa_resource_metric",
-                    "kwargs": {}
+                    "params": {}
                 },
                 {
                     "type": "guardrail",
                     "name": "validate_pods_to_stress_cpu",
-                    "kwargs": {}
+                    "params": {}
                 },
                 {
                     "type": "guardrail",
                     "name": "ensure_hpa_not_at_max_replicas",
-                    "kwargs": {}
+                    "params": {}
                 },
                 {
                     "type": "guardrail",
                     "name": "ensure_metrics_server_available",
-                    "kwargs": {}
+                    "params": {}
                 },
                 {
                     "type": "action",
                     "name": "stress_cpu_hpa",
-                    "kwargs": {
+                    "params": {
                         "max_stress_duration_seconds": 300
                     }
                 },
                 {
                     "type": "rollback",
                     "name": "wait_until_hpa_scales_down",
-                    "kwargs": {
+                    "params": {
                         "timeout_seconds": 900
                     }
                 }
@@ -80,10 +80,8 @@
                     "warmup_period_seconds": 5,
                     "grace_period_seconds": 5
                 },
-                "kwargs": {
+                "params": {
                     "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
-                    "namespace": "nginx",
-                    "workload": "nginx-deployment",
                     "requests_per_interval": 3,
                     "request_timeout_seconds": 5
                 }

@@ -26,5 +26,6 @@ M2M_TOKEN_RESPONSE = {
     "access_token": "dummy_access_token_abc123xyz",
     "expires_in": 157680000,
     "scope": "read write",
+    "token_type": "Bearer",
     "created_at": datetime.now(timezone.utc).isoformat(),
 }

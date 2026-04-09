@@ -2,7 +2,7 @@ image:
   repository: resilience-agent
   tag: local
 
-replicaCount: 2
+replicaCount: 1
 
 envVar:
   enabled: true
