@@ -1,18 +1,9 @@
 import os
 import urllib.parse
-from typing import Dict, Iterable
+from typing import Final
 
-from agent.schemas.suite import ResiliencySuite
-
-
-def url(host: str, path: str) -> str:
-    """Safely join host and path into a full URL."""
-    return urllib.parse.urljoin(host, path)
-
-
-def non_retriable_status_codes() -> Iterable[int]:
-    """Do not retry on following status codes"""
-    return {
+NON_RETRIABLE_STATUS_CODES: Final[frozenset[int]] = frozenset(
+    {
         400,  # Bad request
         401,  # Unauthorized
         403,  # Forbidden
@@ -20,14 +11,16 @@ def non_retriable_status_codes() -> Iterable[int]:
         409,  # Conflict
         422,  # Validation error
     }
+)
 
 
-def get_ids_from_suite(suite: ResiliencySuite) -> Dict:
-    return {"suite_id": suite.id, "run_id": suite.run_id}
+def join_url(host: str, path: str) -> str:
+    """Safely join host and path into a full URL."""
+    return urllib.parse.urljoin(host, path)
 
 
 def get_agent_id() -> str:
-    """Get agent name"""
+    """Return the agent identifier from the pod name environment variable."""
     agent_name: str = os.getenv("POD_NAME")
     if not agent_name:
         raise EnvironmentError("Environment variable POD_NAME not set")

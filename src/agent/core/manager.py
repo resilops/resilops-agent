@@ -9,14 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class WorkerManager:
-    """
-    Manages the lifecycle of background workers for the agent.
-
-    Responsibilities:
-    - Start all workers and track them
-    - Gracefully stop/cancel workers on shutdown
-    - Integrate with the agent's runtime state
-    """
+    """Start, track, and stop background worker tasks for the agent."""
 
     def __init__(
         self,
@@ -24,58 +17,52 @@ class WorkerManager:
         workers: Iterable[PeriodicWorker],
         shutdown_event: asyncio.Event,
     ):
-        """
-        Initialize the worker manager.
-
-        Args:
-            state_handler: Internal state handler
-            workers: Iterable of periodic workers to manage.
-            shutdown_event: Asyncio event used to signal shutdown.
-        """
+        """Create a worker manager for the supplied worker set."""
         self.state_handler = state_handler
         self.workers: List[PeriodicWorker] = list(workers)
         self.shutdown_event = shutdown_event
 
     def start_all_workers(self) -> None:
-        """
-        Start all background workers concurrently and track them in the agent state.
-
-        Each worker is wrapped as an asyncio.Task so it can run concurrently.
-        """
-        workers = [
+        """Create tasks for all workers and register them in runtime state."""
+        worker_tasks = [
             asyncio.create_task(worker.run_continuously(), name=worker.WORKER_NAME)
             for worker in self.workers
         ]
-        self.state_handler.agent.register_workers(workers)
+        self.state_handler.agent.register_workers(worker_tasks)
         logger.info(
             "Started %d background workers",
             len(self.workers),
-            extra={"workers": self.workers},
+            extra={"workers": [worker.WORKER_NAME for worker in self.workers]},
         )
+
+    @staticmethod
+    def _cancel_worker_tasks(worker_tasks: List[asyncio.Task]) -> None:
+        """Cancel every tracked worker task."""
+        for worker_task in worker_tasks:
+            worker_task.cancel()
+
+    @staticmethod
+    def _log_shutdown_errors(
+        worker_tasks: List[asyncio.Task], results: List[object]
+    ) -> None:
+        """Log worker exceptions raised during shutdown."""
+        for worker_task, result in zip(worker_tasks, results):
+            if isinstance(result, Exception):
+                logger.error(
+                    "Worker raised an exception during shutdown",
+                    extra={"worker": worker_task.get_name()},
+                    exc_info=(type(result), result, result.__traceback__),
+                )
 
     async def shutdown_all_workers(self) -> None:
-        """
-        Cancel all running workers and wait for their termination.
-
-        This ensures a graceful shutdown and prevents dangling workers.
-        """
+        """Cancel running workers and wait for them to finish."""
         logger.info("Initiating shutdown of background workers")
-        self.shutdown_event.set()  # Signal all workers to stop
+        self.shutdown_event.set()
+        worker_tasks = self.state_handler.agent.current_workers
 
-        for worker in self.state_handler.agent.current_workers:
-            worker.cancel()  # Cancel each asyncio task
+        self._cancel_worker_tasks(worker_tasks)
 
-        # Wait for all worker tasks to complete and collect exceptions
-        results = await asyncio.gather(
-            *self.state_handler.agent.current_workers, return_exceptions=True
-        )
-
-        # Log exceptions, if any
-        for idx, result in enumerate(results):
-            if isinstance(result, Exception):
-                logger.exception(
-                    "Worker raised an exception during shutdown",
-                    extra={"id": id, "result": result},
-                )
+        results = await asyncio.gather(*worker_tasks, return_exceptions=True)
+        self._log_shutdown_errors(worker_tasks, results)
 
         logger.info("All background workers have been shut down")

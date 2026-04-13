@@ -19,18 +19,18 @@ class BaseWorker(ABC):
         """Check if worker should run in current state."""
 
     @abstractmethod
-    async def execute_iteration(self) -> Optional[Dict[str, Any]]:
+    async def run_iteration(self) -> Optional[Dict[str, Any]]:
         """
         Execute one worker iteration.
         Returns optional context data for hooks.
         """
 
     @abstractmethod
-    async def on_execution_success(self, context: Dict[str, Any]) -> None:
+    async def handle_iteration_success(self, context: Dict[str, Any]) -> None:
         """Called after successful execution."""
 
     @abstractmethod
-    async def on_execution_error(
+    async def handle_iteration_error(
         self, context: Dict[str, Any], error: Exception
     ) -> None:
         """Called when execution fails."""
@@ -41,7 +41,7 @@ class BaseWorker(ABC):
 
 
 class PeriodicWorker(BaseWorker):  # noqa
-    """Concrete implementation of a periodic background worker."""
+    """Base implementation for workers that run on a fixed interval."""
 
     WORKER_NAME: str = "base_worker"
 
@@ -52,6 +52,7 @@ class PeriodicWorker(BaseWorker):  # noqa
         telemetry: AgentTelemetry,
         shutdown_event: asyncio.Event,
     ):
+        """Store shared dependencies needed by periodic workers."""
         self.config = config
         self.state_handler = state_handler
         self.telemetry = telemetry
@@ -60,20 +61,24 @@ class PeriodicWorker(BaseWorker):  # noqa
     async def _execute_safely(self) -> None:
         """Execute one iteration with proper error handling."""
         try:
-            context = await self.execute_iteration() or {}
-            await self.on_execution_success(context)
+            context = await self.run_iteration() or {}
+            await self.handle_iteration_success(context)
         except Exception as error:
             context = getattr(error, "context", {})
-            await self.on_execution_error(context, error)
+            await self.handle_iteration_error(context, error)
 
     async def should_execute(self) -> bool:
         """Default precondition: always execute unless overridden."""
         return True
 
+    async def _sleep_until_next_iteration(self) -> None:
+        """Sleep for the configured interval before the next execution cycle."""
+        await asyncio.sleep(self.execution_interval())
+
     async def run_continuously(self) -> None:
-        """Main execution loop for the periodic worker."""
+        """Run the worker loop until shutdown is requested."""
         while not self.shutdown_event.is_set():
-            await asyncio.sleep(self.execution_interval())
+            await self._sleep_until_next_iteration()
 
             if self.shutdown_event.is_set():
                 break

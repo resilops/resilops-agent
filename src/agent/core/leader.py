@@ -43,9 +43,9 @@ class KubernetesLeaderElection:
         """Return whether this instance currently believes it is leader."""
         return self._is_leader
 
-    def try_acquire_or_renew(self) -> bool:
+    def acquire_or_renew_lease(self) -> bool:
         """
-        Try to acquire the lease or renew it if already owned.
+        Acquire the lease or renew it if already owned.
 
         Returns:
             True if this instance is leader after the operation, otherwise False.

@@ -1,49 +1,55 @@
 import asyncio
 from typing import List, Optional
 
+from agent.schemas.scenario import ResiliencyScenarioClaim
 from agent.schemas.state import (
     AgentHealthStatusEnum,
     AgentRuntimeState,
-    ResiliencySuiteLifecycleStateEnum,
-    ResiliencySuiteRuntimeState,
+    RunnerLifecycleStateEnum,
+    RunnerRuntimeState,
 )
-from agent.schemas.suite import ResiliencySuite
 
 
-class ResiliencySuiteRuntimeStateHandler:
-    """Manages lifecycle transitions for a resiliency suite execution."""
+class RunnerRuntimeStateHandler:
+    """Manages lifecycle transitions for a resiliency scenario execution."""
 
-    def __init__(self, state: ResiliencySuiteRuntimeState):
+    def __init__(self, state: RunnerRuntimeState):
         self._state = state
 
     @property
-    def current_suite(self) -> Optional[ResiliencySuite]:
-        return self._state.suite
+    def current_claim(self) -> Optional[ResiliencyScenarioClaim]:
+        """Return the claim currently assigned to the runner, if any."""
+        return self._state.claim
 
     @property
     def is_idle(self) -> bool:
-        return self._state.state == ResiliencySuiteLifecycleStateEnum.IDLE
+        """Return whether the runner is currently idle."""
+        return self._state.state == RunnerLifecycleStateEnum.IDLE
 
     @property
     def is_queued(self) -> bool:
-        return self._state.state == ResiliencySuiteLifecycleStateEnum.QUEUED
+        """Return whether a claim is queued for execution."""
+        return self._state.state == RunnerLifecycleStateEnum.QUEUED
 
-    def enqueue(self, suite: ResiliencySuite) -> None:
+    def enqueue(self, claim: ResiliencyScenarioClaim) -> None:
+        """Queue a claim for execution when the runner is idle."""
         if not self.is_idle:
-            raise RuntimeError("Suite execution slot is busy.")
+            raise RuntimeError("Scenario claim execution slot is busy.")
 
-        self._state.suite = suite
-        self._state.state = ResiliencySuiteLifecycleStateEnum.QUEUED
+        self._state.claim = claim
+        self._state.state = RunnerLifecycleStateEnum.QUEUED
 
     def mark_running(self) -> None:
+        """Transition the runner from queued to running."""
         if not self.is_queued:
-            raise RuntimeError("Cannot start execution: no suite queued.")
+            raise RuntimeError("Cannot start execution: no claim queued.")
 
-        self._state.state = ResiliencySuiteLifecycleStateEnum.RUNNING
+        self._state.state = RunnerLifecycleStateEnum.RUNNING
 
-    def mark_idle(self) -> None:
-        self._state.suite = None
-        self._state.state = ResiliencySuiteLifecycleStateEnum.IDLE
+    def reset_to_idle(self) -> None:
+        """Clear the current claim and reset the runner to idle."""
+        self._state.claim = None
+        self._state.state = RunnerLifecycleStateEnum.IDLE
 
 
 class AgentRuntimeStateHandler:
@@ -75,13 +81,9 @@ class AgentRuntimeStateHandler:
 
 
 class AgentStateHandler:
-    """
-    Facade for all agent state mutations.
-
-    Workers should interact ONLY with this handler.
-    """
+    """Facade exposing the mutable runtime state used by workers."""
 
     def __init__(self) -> None:
         state = AgentRuntimeState()
         self.agent = AgentRuntimeStateHandler(state)
-        self.runner = ResiliencySuiteRuntimeStateHandler(state.runner)
+        self.runner = RunnerRuntimeStateHandler(state.runner)

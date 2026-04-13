@@ -4,22 +4,24 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel
 
-ERROR_RATE = 0.2  # Probability of simulating a failure
-MAX_DELAY = 2.0  # Maximum artificial delay in seconds
-RESILIENCY_SUITE_EMPTY_RATE = 0.5  # 50 % of times suite is empty
+
+class ResiliencyScenarioStatusEnum(Enum):
+
+    PENDING = "pending"
+    ACKNOWLEDGED = "acknowledged"
 
 
-class ResiliencySuiteStatusEnum(Enum):
+class ResiliencyScenario(BaseModel):
 
-    QUEUED = "queued"
-    PROCESSED = "processed"
-
-
-class ResiliencySuite(BaseModel):
-
-    suite: Dict[str, Any]
-    scenarios: List[Dict[str, Any]]
-    state: ResiliencySuiteStatusEnum = ResiliencySuiteStatusEnum.QUEUED
+    id: int
+    run_id: int
+    name: str
+    title: str
+    description: str
+    template: Dict[str, Any]
+    steps: List[Dict[str, Any]]
+    observer: Dict[str, Any]
+    state: ResiliencyScenarioStatusEnum = ResiliencyScenarioStatusEnum.PENDING
 
 
 M2M_TOKEN_RESPONSE = {

@@ -4,16 +4,16 @@ CLIENT_CREDENTIALS_GRANT_TYPE: str = "client_credentials"
 AUTH_SERVICE_M2M_TOKEN_ISSUE_PATH: str = "/api/v1/m2m/token"
 
 AGENT_HEARTBEAT_PATH = "/api/v1/agent/heartbeat"
-AGENT_SUITE_PATH = "/api/v1/agent/suite"
-AGENT_SUITE_ACK_PATH = "/api/v1/agent/suite/ack"
-AGENT_SUITE_SCENARIO_PATH = "/api/v1/agent/suite/{suite_id}/scenario/{scenario_id}"
+AGENT_CLAIMS_PATH = "/api/v1/agent/scenario-queue/claims"
+AGENT_CLAIM_ACK_PATH = "/api/v1/agent/scenario-claims/{claim_id}/ack"
+AGENT_SCENARIO_PATH = "/api/v1/agent/scenario/{scenario_id}"
 AGENT_CLUSTER_SNAPSHOT: str = "/api/v1/agent/cluster/snapshot"
 
-DISCOVERY_k8_LEASE_NAME: str = "resilience-agent-snapshot-discovery-lease"
+DISCOVERY_K8S_LEASE_NAME: str = "resilience-agent-snapshot-discovery-lease"
 
 
 class AgentOAuthScopes(Enum):
-    """Standardized OAuth scopes for agents"""
+    """OAuth scopes required by the agent."""
 
     # Events and metrics
     event_create = "res:oauth:scope:events:create"
@@ -24,11 +24,19 @@ class AgentOAuthScopes(Enum):
 
     @classmethod
     def scopes(cls) -> str:
-        return " ".join([scope.value for scope in cls])
+        """Return the scopes as a space-delimited OAuth scope string."""
+        return " ".join(scope.value for scope in cls)
 
 
 class AgentHealthEnum(str, Enum):
-    """Cluster Agent Status"""
+    """Health values accepted by the control plane heartbeat endpoint."""
 
     healthy = "healthy"
     degraded = "degraded"
+
+
+class ResiliencyScenarioClaimStatusEnum(str, Enum):
+    """Resiliency scenario claims status."""
+
+    pending = "pending"
+    acknowledged = "acknowledged"

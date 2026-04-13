@@ -1,17 +1,17 @@
 import asyncio
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from server.constants import (
     M2M_TOKEN_RESPONSE,
-    ResiliencySuite,
-    ResiliencySuiteStatusEnum,
+    ResiliencyScenario,
+    ResiliencyScenarioStatusEnum,
 )
 
 app = FastAPI(title="Control Plane API")
-suite_lock = asyncio.Lock()
+claim_lock = asyncio.Lock()
 
-current_suite: Optional[ResiliencySuite] = None
+queued_scenario: Optional[ResiliencyScenario] = None
 
 
 # -------------------------------------------------------------------
@@ -54,46 +54,6 @@ async def agent_heartbeat(request: Request):
     return {"health": payload.get("health")}
 
 
-@app.get("/api/v1/agent/suite")
-async def agent_fetch_suite():
-    """Fetch a queued resiliency test suite."""
-    if current_suite is None or current_suite.state != ResiliencySuiteStatusEnum.QUEUED:
-        return {}
-
-    return current_suite.suite
-
-
-@app.post("/api/v1/agent/suite/ack")
-async def agent_acknowledge_suite(request: Request):
-    """Acknowledge and mark suite as processed."""
-    payload = await request.json()
-    print(payload)
-    async with suite_lock:
-        if current_suite is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No suite queued",
-            )
-        if current_suite.state == ResiliencySuiteStatusEnum.PROCESSED:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Some other agent already picked this up",
-            )
-        current_suite.state = ResiliencySuiteStatusEnum.PROCESSED
-    return {"status": "ok"}
-
-
-@app.get("/api/v1/agent/suite/{suite_id}/scenario/{scenario_id}")
-async def agent_fetch_scenario(suite_id: int, scenario_id: int):
-    """Fetch a resiliency scenario from a suite."""
-    if current_suite is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active suite",
-        )
-    return current_suite.scenarios[0]
-
-
 @app.post("/api/v1/agent/cluster/snapshot")
 async def cluster_snapshot(request: Request):
     payload = await request.json()
@@ -102,16 +62,63 @@ async def cluster_snapshot(request: Request):
 
 
 # -------------------------------------------------------------------
-# Queue APIs
+# Queue and claims APIs
 # -------------------------------------------------------------------
 
 
-@app.post("/api/v1/queue/suite", status_code=status.HTTP_201_CREATED)
-async def queue_suite(suite: ResiliencySuite):
-    global current_suite
-    suite.state = ResiliencySuiteStatusEnum.QUEUED
-    current_suite = suite
+@app.post("/api/v1/scenario-queue/items", status_code=status.HTTP_201_CREATED)
+async def queue_scenario(scenario: ResiliencyScenario):
+    global queued_scenario
+    scenario.state = ResiliencyScenarioStatusEnum.PENDING
+    queued_scenario = scenario
     return {"status": "queued"}
+
+
+@app.get("/api/v1/agent/scenario-queue/claims")
+async def scenario_claims(request: Request):
+    """Fetch a queued resiliency test suite."""
+    if (
+        queued_scenario is None
+        or queued_scenario.state != ResiliencyScenarioStatusEnum.PENDING
+    ):
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    return [{"id": 1, "run_id": 1, "scenario_id": 1, "status": "pending"}]
+
+
+@app.post("/api/v1/agent/scenario-claims/{claim_id}/ack")
+async def agent_acknowledge_claim(claim_id: int):
+    """Acknowledge and mark claim as processed."""
+
+    async with claim_lock:
+        if queued_scenario is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No scenario queued",
+            )
+        if queued_scenario.state == ResiliencyScenarioStatusEnum.ACKNOWLEDGED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Some other agent already picked this up",
+            )
+        queued_scenario.state = ResiliencyScenarioStatusEnum.ACKNOWLEDGED
+
+    return {
+        "id": 1,
+        "scenario_id": 1,
+        "status": ResiliencyScenarioStatusEnum.ACKNOWLEDGED.value,
+    }
+
+
+# -------------------------------------------------------------------
+# Scenario
+# -------------------------------------------------------------------
+
+
+@app.get("/api/v1/agent/scenario/{scenario_id}")
+async def agent_fetch_scenario(scenario_id: int):
+    """Fetch a resiliency scenario from a suite."""
+    return queued_scenario
 
 
 # -------------------------------------------------------------------
@@ -119,7 +126,7 @@ async def queue_suite(suite: ResiliencySuite):
 # -------------------------------------------------------------------
 
 
-@app.post("/api/v1/events", status_code=status.HTTP_201_CREATED)
+@app.post("/api/v1/agent/events", status_code=status.HTTP_201_CREATED)
 async def ingest_events(request: Request):
     payload = await request.json()
     print(payload)
@@ -131,7 +138,7 @@ async def ingest_events(request: Request):
 # -------------------------------------------------------------------
 
 
-@app.post("/api/v1/metrics", status_code=status.HTTP_201_CREATED)
+@app.post("/api/v1/agent/metrics", status_code=status.HTTP_201_CREATED)
 async def ingest_metrics(request: Request):
     payload = await request.json()
     print(payload)

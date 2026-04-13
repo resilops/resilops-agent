@@ -1,36 +1,27 @@
 import logging
 from typing import Dict, Optional
 
-from reslib.schemas.scenario import ResiliencyScenario
-
 from agent.clients.base import BaseAPIClient
 from agent.clients.token import AuthServiceClient
 from agent.constants import (
+    AGENT_CLAIM_ACK_PATH,
+    AGENT_CLAIMS_PATH,
     AGENT_CLUSTER_SNAPSHOT,
     AGENT_HEARTBEAT_PATH,
-    AGENT_SUITE_ACK_PATH,
-    AGENT_SUITE_PATH,
-    AGENT_SUITE_SCENARIO_PATH,
+    AGENT_SCENARIO_PATH,
     AgentHealthEnum,
+    ResiliencyScenarioClaimStatusEnum,
 )
 from agent.schemas.config import AgentConfigModel
 from agent.schemas.heartbeat import HeartbeatRequestModel, HeartbeatResponseModel
+from agent.schemas.scenario import ResiliencyScenario, ResiliencyScenarioClaim
 from agent.schemas.snapshot import ClusterSnapshotRequestModel
-from agent.schemas.suite import ResiliencySuite
 
 logger = logging.getLogger(__name__)
 
 
 class ControlPlaneClient(BaseAPIClient):
-    """
-    Async client for interacting with the Control Plane API.
-
-    Provides methods for:
-    - Registering the agent
-    - Sending periodic heartbeat signals
-    - Fetching resiliency suite
-    - Acknowledging suite
-    """
+    """Client for control plane API operations used by the agent."""
 
     def __init__(self, config: AgentConfigModel, auth_service: AuthServiceClient):
         super().__init__(config)
@@ -38,21 +29,11 @@ class ControlPlaneClient(BaseAPIClient):
 
     @property
     def host(self) -> str:
-        """
-        Base URL of the control plane API.
-
-        Returns:
-            str: Host URL from the agent configuration.
-        """
+        """Return the control plane base URL."""
         return self.config.control_plane_api_host
 
     async def get_headers(self) -> Dict[str, str]:  # noqa
-        """
-        Return HTTP headers including authorization keys.
-
-        Returns:
-            dict: HTTP headers with 'Content-Type' and API keys.
-        """
+        """Return authenticated request headers for control plane calls."""
         token_response = await self.auth_service.get_m2m_token()
         return {
             "Content-Type": "application/json",
@@ -64,12 +45,7 @@ class ControlPlaneClient(BaseAPIClient):
         health: AgentHealthEnum = AgentHealthEnum.healthy,
         reason: Optional[str] = None,
     ) -> HeartbeatResponseModel:
-        """
-        Send a heartbeat signal to indicate the agent is alive.
-
-        Returns:
-            Dict[str, Any]: Parsed JSON response from the control plane.
-        """
+        """Send the current agent heartbeat to the control plane."""
         logger.debug("Sending heartbeat")
         payload = HeartbeatRequestModel(
             health=health,
@@ -84,56 +60,39 @@ class ControlPlaneClient(BaseAPIClient):
         )
         return HeartbeatResponseModel(**response)
 
-    async def fetch_suite(self) -> Optional[ResiliencySuite]:
-        """
-        Fetch the next resiliency suite from the control plane.
+    async def fetch_scenario_claim(self) -> Optional[ResiliencyScenarioClaim]:
+        """Return the next available scenario claim, if one exists."""
+        logger.debug("Fetching claim from control plane")
+        response = await self.request("GET", AGENT_CLAIMS_PATH)
 
-        Returns:
-            ResiliencySuite: Resiliency suite details, or an empty suite if
-            none available.
-        """
-        logger.debug("Fetching resiliency suite from control plane")
-        response: Dict = await self.request("GET", AGENT_SUITE_PATH)
-        return ResiliencySuite(**response) if response else None
+        claim = ResiliencyScenarioClaim(**response[0]) if response else None
+        if claim and claim.status == ResiliencyScenarioClaimStatusEnum.pending:
+            return claim
 
-    async def ack_suite(self, suite_id: int) -> None:
-        """Acknowledge that a resiliency suite has been received."""
-        logger.info("Acknowledging suite with ID: %d", suite_id)
+        return None
+
+    async def ack_scenario_claim(self, claim_id: int) -> None:
+        """Acknowledge receipt of a scenario claim."""
+        logger.info("Acknowledging scenario with ID: %d", claim_id)
         await self.request(
             "POST",
-            AGENT_SUITE_ACK_PATH,
-            json={"id": suite_id},
+            AGENT_CLAIM_ACK_PATH.format(claim_id=claim_id),
         )
         return
 
-    async def fetch_scenario(
-        self, suite_id: int, scenario_id: int
-    ) -> ResiliencyScenario:
-        """
-        Fetch the resiliency scenario information given id.
-
-        Returns:
-            ResiliencyScenario: Returns scenario instructions.
-        """
+    async def fetch_scenario(self, scenario_id: int) -> ResiliencyScenario:
+        """Fetch a scenario definition by ID."""
         logger.debug("Fetching resiliency scenario from control plane")
         response: Dict = await self.request(
-            "GET",
-            AGENT_SUITE_SCENARIO_PATH.format(
-                suite_id=suite_id, scenario_id=scenario_id
-            ),
+            "GET", AGENT_SCENARIO_PATH.format(scenario_id=scenario_id)
         )
         return ResiliencyScenario(**response)
 
-    async def cluster_snapshot(self, payload: ClusterSnapshotRequestModel) -> None:
-        """
-        Send a cluster snapshot to the control plane.
-
-        This method submits the current Kubernetes cluster state to the control
-        plane via a POST request. The snapshot includes a unique synchronization
-        UUID and the state of all namespaces, which can be used for reconciliation,
-        auditing, or state tracking.
-        """
-        logger.debug("Cluster snapshot from control plane")
+    async def publish_cluster_snapshot(
+        self, payload: ClusterSnapshotRequestModel
+    ) -> None:
+        """Send a namespace discovery snapshot to the control plane."""
+        logger.debug("Sending cluster snapshot to control plane")
         await self.request(
             "POST",
             AGENT_CLUSTER_SNAPSHOT,

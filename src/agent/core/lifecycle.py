@@ -8,15 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class LifecycleManager:
-    """
-    Coordinates the lifecycle of a resiliency-agent.
-
-    Responsibilities:
-    - Register OS signal handlers for graceful shutdown
-    - Start background workers via WorkerManager
-    - Wait for a shutdown signal
-    - Shutdown all running workers cleanly
-    """
+    """Coordinate startup, signal handling, and shutdown for the agent."""
 
     SHUTDOWN_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 
@@ -25,23 +17,12 @@ class LifecycleManager:
         worker_manager: WorkerManager,
         shutdown_event: asyncio.Event,
     ):
-        """
-        Initialize the lifecycle manager.
-
-        Args:
-            worker_manager: Responsible for starting/stopping background workers.
-            shutdown_event: Async event used to signal shutdown.
-        """
+        """Create the lifecycle manager."""
         self.worker_manager = worker_manager
         self.shutdown_event = shutdown_event
 
     def register_signal_handlers(self) -> None:
-        """
-        Register OS signal handlers (SIGINT, SIGTERM) to trigger graceful shutdown.
-
-        On platforms where `loop.add_signal_handler` is not supported (Windows),
-        fallback to `signal.signal`.
-        """
+        """Register shutdown handlers for supported process signals."""
         loop = asyncio.get_running_loop()
         logger.info("Registering shutdown signal handlers")
         for sig in self.SHUTDOWN_SIGNALS:
@@ -53,14 +34,7 @@ class LifecycleManager:
                 signal.signal(sig, lambda signum, frame: self.shutdown_event.set())
 
     async def run(self) -> None:
-        """
-        Start the agent lifecycle manager.
-
-        - Registers signal handlers
-        - Starts all background workers via worker manager
-        - Waits for the shutdown event
-        - Performs a graceful shutdown when triggered
-        """
+        """Start workers, wait for shutdown, then stop workers gracefully."""
         self.register_signal_handlers()
         self.worker_manager.start_all_workers()
         logger.info("Resiliency agent started and running")
@@ -73,13 +47,7 @@ class LifecycleManager:
             await self.shutdown()
 
     async def shutdown(self) -> None:
-        """
-        Shutdown the agent gracefully.
-
-        - Stops all running workers via worker manager
-        - Waits for worker completion and logs any exceptions
-        - Logs completion of shutdown
-        """
+        """Stop managed workers and finish shutdown."""
         logger.info("Resiliency agent initiating shutdown")
         await self.worker_manager.shutdown_all_workers()
         logger.info("Shutdown complete")

@@ -51,7 +51,6 @@ envVar:
     RESILTY_AGENT_AUTH_SERVICE_HOST: https://auth.resilty.io
     RESILTY_AGENT_TARGET_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
     RESILTY_AGENT_NAMESPACE: '{{ .Release.Namespace }}'
-    RESILTY_AGENT_CONFIG_VERSION: ""
 
 existingSecret:
   name: resilty-agent-secrets
@@ -118,7 +117,7 @@ file_config:
             Match                  resilty.agent.events
             Host                   ${FLUENTBIT_REMOTE_HOST}
             Port                   ${FLUENTBIT_REMOTE_PORT}
-            URI                    /api/v1/ingest/events
+            URI                    /api/v1/agent/ingest/events
             Format                 json
             tls                    ${FLUENTBIT_REMOTE_TLS}
             Retry_Limit            20
@@ -134,7 +133,7 @@ file_config:
             Match                  resilty.agent.metrics
             Host                   ${FLUENTBIT_REMOTE_HOST}
             Port                   ${FLUENTBIT_REMOTE_PORT}
-            URI                    /api/v1/ingest/metrics
+            URI                    /api/v1/agent/ingest/metrics
             Format                 json
             tls                    ${FLUENTBIT_REMOTE_TLS}
             Retry_Limit            10

@@ -57,7 +57,7 @@ class NamespaceSnapshotHandler:
         Raises:
             NotLeaderError: If this instance is not the current leader.
         """
-        is_leader = await asyncio.to_thread(self.leader_election.try_acquire_or_renew)
+        is_leader = await asyncio.to_thread(self.leader_election.acquire_or_renew_lease)
         if not is_leader:
             raise NotLeaderError("Not a Kubernetes leader instance")
 
@@ -65,18 +65,8 @@ class NamespaceSnapshotHandler:
         """Sleep for a random interval between discovery batches."""
         await asyncio.sleep(random.uniform(1, self.DISCOVERY_MAX_JITTER_SECONDS))
 
-    async def snapshot(self) -> uuid.UUID:
-        """
-        Discover target namespaces in batches and send each batch snapshot to the
-        control plane using the same sync UUID.
-
-        Returns:
-            The sync UUID associated with this snapshot run.
-
-        Raises:
-            NotLeaderError: If leadership is not held at execution time.
-            Exception: Propagates discovery or control-plane errors.
-        """
+    async def capture_and_publish_snapshot(self) -> uuid.UUID:
+        """Discover target namespaces in batches and upload them under one sync ID."""
         await self._ensure_leadership()
 
         sync_uuid = uuid.uuid4()
@@ -102,7 +92,7 @@ class NamespaceSnapshotHandler:
                     sync_uuid=sync_uuid,
                     namespaces=namespace_states,
                 )
-                await self.client.cluster_snapshot(payload=payload)
+                await self.client.publish_cluster_snapshot(payload=payload)
 
             except Exception as exc:
                 setattr(exc, "context", {"sync_uuid": sync_uuid})

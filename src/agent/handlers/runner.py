@@ -1,52 +1,36 @@
 import logging
 
 from reslib.runtime.scenario import execute_resilience_scenario
-from reslib.schemas.scenario import ResiliencyScenario
 
 from agent.clients.control_plane import ControlPlaneClient
-from agent.handlers.telemetry import AgentTelemetry, ResLibTelemetryWithContext
-from agent.schemas.suite import ResiliencySuite
+from agent.handlers.telemetry import AgentTelemetry, AgentTelemetryWithRunContext
+from agent.schemas.scenario import ResiliencyScenario, ResiliencyScenarioClaim
 
 logger = logging.getLogger(__name__)
 
 
-class ResiliencySuiteRunner:
-    """
-    Executes resiliency scenarios sequentially and emits execution events.
-
-    Responsibilities:
-        - Fetch scenarios from the control plane
-        - Execute scenarios as a one-shot suite
-        - Surface execution failures with context
-    """
+class ResiliencyScenarioRunner:
+    """Executes resiliency scenarios and emits execution events."""
 
     def __init__(self, client: ControlPlaneClient, telemetry: AgentTelemetry):
         self.client = client
         self.telemetry = telemetry
 
-    async def run(self, suite: ResiliencySuite) -> None:
-        """
-        Execute all scenarios in a suite sequentially.
-
-        Raises:
-            ResiliencySuiteExecutionError: if scenario execution or fetching fails.
-        """
-        for scenario_id in suite.scenarios:
-            try:
-                scenario: ResiliencyScenario = await self.client.fetch_scenario(
-                    suite_id=suite.id,
-                    scenario_id=scenario_id,
-                )
-                await execute_resilience_scenario(
-                    scenario=scenario,
-                    telemetry=ResLibTelemetryWithContext(
-                        telemetry=AgentTelemetry(),
-                        run_id=suite.run_id,
-                        suite_id=suite.id,
-                        scenario_id=scenario_id,
-                    ),
-                )
-            except Exception as exc:
-                logger.exception("Suite execution failed")
-                setattr(exc, "context", {"suite": suite, "scenario_id": scenario_id})
-                raise
+    async def execute_claim(self, claim: ResiliencyScenarioClaim) -> None:
+        """Fetch and execute the scenario referenced by a queued claim."""
+        try:
+            scenario: ResiliencyScenario = await self.client.fetch_scenario(
+                scenario_id=claim.scenario_id
+            )
+            await execute_resilience_scenario(
+                scenario=scenario,
+                telemetry=AgentTelemetryWithRunContext(
+                    telemetry=self.telemetry,
+                    run_id=scenario.run_id,
+                    scenario_id=scenario.id,
+                ),
+            )
+        except Exception as exc:
+            logger.exception("Scenario execution failed")
+            setattr(exc, "context", {"claim": claim})
+            raise

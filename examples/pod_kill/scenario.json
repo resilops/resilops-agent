@@ -1,80 +1,65 @@
 {
-    "suite": {
-        "id": 1,
-        "run_id": 2,
-        "title": "Resiliency Suite 1",
-        "tags": ["kubernetes"],
-        "execution": {
-            "mode": "series",
-            "stop_on_failure": true
-        },
-        "scenarios": [1]
+    "id": 1,
+    "run_id": 2,
+    "name": "pod_kill",
+    "title": "Do we remain available in face of pod going down?",
+    "description": "We expect Kubernetes to handle the situation gracefully when a pod goes down",
+    "template": {
+        "namespace": "nginx",
+        "workload": "nginx-deployment",
+        "quantity": 1,
+        "mode": "absolute",
+        "min_remaining_replicas": 1
     },
-    "scenarios": [
+    "steps": [
         {
-            "id": 1,
-            "suite_id": 1,
-            "name": "pod_kill",
-            "title": "Do we remain available in face of pod going down?",
-            "description": "We expect Kubernetes to handle the situation gracefully when a pod goes down",
-            "template": {
-                "namespace": "nginx",
-                "workload": "nginx-deployment",
-                "quantity": 1,
-                "mode": "absolute",
-                "min_remaining_replicas": 1
-            },
-            "steps": [
-                {
-                    "type": "guardrail",
-                    "name": "ensure_workload_steady",
-                    "params": {}
-                },
-                {
-                    "type": "guardrail",
-                    "name": "ensure_hpa_not_at_max_replicas",
-                    "params": {}
-                },
-                {
-                    "type": "guardrail",
-                    "name": "validate_min_remaining_replicas",
-                    "params": {}
-                },
-                {
-                    "type": "guardrail",
-                    "name": "ensure_pdb_not_violated",
-                    "params": {
-                        "allow_missing_pdb": true
-                    }
-                },
-                {
-                    "type": "action",
-                    "name": "terminate_pods",
-                    "params": {
-                        "timeout_seconds":200
-                    }
-                },
-                {
-                    "type": "rollback",
-                    "name": "wait_until_pod_respawn",
-                    "params": {
-                        "timeout_seconds": 300
-                    }
-                }
-            ],
-            "observer": {
-                "name": "measure_endpoint_latency",
-                "config": {
-                    "sampling_interval_seconds": 4,
-                    "warmup_period_seconds": 10,
-                    "grace_period_seconds": 10
-                },
-                "params": {
-                    "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
-                    "requests_per_interval": 3,
-                    "request_timeout_seconds": 5
-                }
+            "type": "guardrail",
+            "name": "ensure_workload_steady",
+            "params": {}
+        },
+        {
+            "type": "guardrail",
+            "name": "ensure_hpa_not_at_max_replicas",
+            "params": {}
+        },
+        {
+            "type": "guardrail",
+            "name": "validate_min_remaining_replicas",
+            "params": {}
+        },
+        {
+            "type": "guardrail",
+            "name": "ensure_pdb_not_violated",
+            "params": {
+                "allow_missing_pdb": true
+            }
+        },
+        {
+            "type": "action",
+            "name": "terminate_pods",
+            "params": {
+                "timeout_seconds":200
+            }
+        },
+        {
+            "type": "rollback",
+            "name": "wait_until_pod_respawn",
+            "params": {
+                "timeout_seconds": 300
             }
         }
-    ]
+    ],
+    "observer": {
+        "name": "measure_endpoint_latency",
+        "config": {
+            "sampling_interval_seconds": 4,
+            "warmup_period_seconds": 10,
+            "grace_period_seconds": 10
+        },
+        "params": {
+            "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
+            "requests_per_interval": 3,
+            "request_timeout_seconds": 5
+        }
+    }
 }

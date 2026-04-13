@@ -12,13 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class HealthMonitorWorker(PeriodicWorker):
-    """
-    Periodic worker responsible for sending health status to the control plane.
-
-    This worker reports the liveness of the agent at a fixed interval.
-    On successful health report delivery, the agent is marked as HEALTHY.
-    On failure, the agent is marked as UNHEALTHY.
-    """
+    """Send periodic heartbeats and reflect the result in agent health state."""
 
     WORKER_NAME: str = "health_monitor"
     SKIP_HEALTH_CHECK: bool = True
@@ -31,59 +25,26 @@ class HealthMonitorWorker(PeriodicWorker):
         shutdown_event: asyncio.Event,
         client: ControlPlaneClient,
     ):
-        """
-        Initialize the health reporter worker.
-
-        Args:
-            config: Agent configuration containing health report interval settings.
-            state_handler: Internal state handler.
-            telemetry: Telemetry handler.
-            shutdown_event: Async event used to gracefully stop the worker loop.
-            client: API client used to communicate with the control plane.
-        """
+        """Create the heartbeat worker."""
         super().__init__(config, state_handler, telemetry, shutdown_event)
         self.client = client
 
     def execution_interval(self) -> int:
-        """
-        Interval (in seconds) at which health reports are sent.
-
-        Returns:
-            Health report interval defined in the agent configuration.
-        """
+        """Return the configured heartbeat interval in seconds."""
         return self.config.heartbeat_interval
 
-    async def execute_iteration(self) -> Optional[Dict[str, Any]]:
-        """
-        Send a single health report to the control plane.
-        This method performs the actual health API call.
-        Any exception raised here will be handled by the base worker
-        and routed to the error hook.
-
-        Returns:
-            Optional context dictionary. Not used for health reporting.
-        """
+    async def run_iteration(self) -> Optional[Dict[str, Any]]:
+        """Send one heartbeat request to the control plane."""
         await self.client.send_heartbeat()
         return None
 
-    async def on_execution_success(self, context: Dict[str, Any]) -> None:
-        """
-        Handle successful health report delivery. Marks the agent as healthy.
-
-        Args:
-            context: Context returned by `execute_iteration` (unused).
-        """
+    async def handle_iteration_success(self, context: Dict[str, Any]) -> None:
+        """Mark the agent healthy after a successful heartbeat."""
         self.state_handler.agent.set_health(healthy=True)
 
-    async def on_execution_error(
+    async def handle_iteration_error(
         self, context: Dict[str, Any], error: Exception
     ) -> None:
-        """
-        Handle health report failure. Marks the agent as unhealthy and logs the error.
-
-        Args:
-            context: Context returned by `execute_iteration` (unused).
-            error: Exception raised during health report execution.
-        """
-        logger.error("Health report request failed: %s", exc_info=error)
+        """Mark the agent unhealthy and log the heartbeat failure."""
+        logger.error("Health report request failed", exc_info=error)
         self.state_handler.agent.set_health(healthy=False)

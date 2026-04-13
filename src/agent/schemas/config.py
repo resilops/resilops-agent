@@ -24,10 +24,7 @@ _APP_VERSION = _get_app_version()
 
 
 class AgentConfigModel(BaseSettings):
-    """
-    Configuration for the resiliency-agent.
-    Environment variables are prefixed with `RESILTY_AGENT_`.
-    """
+    """Runtime configuration loaded from `RESILTY_AGENT_` environment variables."""
 
     model_config = SettingsConfigDict(env_prefix="RESILTY_AGENT_")
 
@@ -50,12 +47,12 @@ class AgentConfigModel(BaseSettings):
         60, ge=60, description="Interval between heartbeat signals to the control plane"
     )
     runner_interval: int = Field(
-        5, ge=5, description="Interval for executing queued resiliency suites"
+        5, ge=5, description="Interval for executing queued resiliency scenarios"
     )
-    resiliency_suite_poll_interval: int = Field(
+    resiliency_scenario_poll_interval: int = Field(
         60,
         ge=60,
-        description="Interval for polling the control plane for new resiliency suites",
+        description="Interval for polling control plane for new resiliency scenario",
     )
     namespace_snapshot_interval: int = Field(
         default=10800,  # 3 hours interval
@@ -79,6 +76,7 @@ class AgentConfigModel(BaseSettings):
     @field_validator("target_namespaces", mode="before")
     @classmethod
     def parse_target_namespaces(cls, value: str) -> List[str]:
+        """Parse a comma-separated namespace list from the environment."""
         if not isinstance(value, str):
             raise ConfigError(
                 "RESILTY_AGENT_TARGET_NAMESPACES must be a comma-separated string"

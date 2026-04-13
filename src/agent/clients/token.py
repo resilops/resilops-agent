@@ -31,27 +31,7 @@ class AuthServiceClient(BaseAPIClient):
         return self.config.auth_service_host
 
     async def get_m2m_token(self) -> M2MAccessTokenResponse:
-        """
-        Retrieve a machine-to-machine (M2M) access token using client credentials.
-
-        This method implements in-memory caching and concurrency control to avoid
-        unnecessary token requests:
-
-        - Returns the cached token if it exists and is not expired.
-        - Uses an asyncio lock to ensure only one coroutine refreshes the token
-          at a time when expired.
-        - Performs a double-check inside the lock to prevent duplicate refreshes
-          under concurrent access.
-        - Requests a new token from the auth service using HTTP Basic authentication
-          (client_id + client_secret) when needed.
-
-        Returns:
-            M2MAccessTokenResponse: A valid access token response containing the
-            token, expiration, and scope.
-
-        Raises:
-            APIRequestError: If the upstream auth service request fails.
-        """
+        """Return a cached M2M token or fetch a fresh one when required."""
         if self._auth_m2m_token and not self._auth_m2m_token.is_expired:
             return self._auth_m2m_token
 
@@ -71,7 +51,7 @@ class AuthServiceClient(BaseAPIClient):
                         "grant_type": CLIENT_CREDENTIALS_GRANT_TYPE,
                     },
                     headers={"Content-Type": "application/x-www-form-urlencoded"},
-                    max_retries=0,  # No retries for post
+                    max_retries=0,
                 )
             except Exception:
                 logger.exception("M2M access token request failed")
