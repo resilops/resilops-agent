@@ -10,7 +10,7 @@ NAMESPACE ?= resiltyio
 APP_CHART ?= ../helm-charts/app
 AGENT_RELEASE ?= agent
 CONTROL_RELEASE ?= controlplane
-AGENT_VERSION ?= 1a2b3c4d
+AGENT_CONFIG_VERSION ?= G6h35KBUn7g
 RBAC_NAMESPACES ?= nginx,http-echo
 SECRETS_NAME ?= resilty-agent-secrets
 
@@ -21,7 +21,7 @@ CONTROL_LOCAL_VALUES := ./helm/controlplane/local/values.yaml
 HELM_AGENT_ARGS := \
 	-f $(AGENT_COMMON_VALUES) \
 	-f $(AGENT_LOCAL_VALUES) \
-	--set-string 'environment_variable.data.RESILTY_AGENT_CONFIG_VERSION=$(AGENT_VERSION)' \
+	--set-string 'envVar.data.RESILTY_AGENT_CONFIG_VERSION=$(AGENT_CONFIG_VERSION)' \
 	--set 'rbac.namespaced.namespaces={$(RBAC_NAMESPACES)}'
 
 HELM_CONTROL_ARGS := \

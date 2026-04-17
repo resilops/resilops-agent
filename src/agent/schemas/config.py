@@ -44,13 +44,17 @@ class AgentConfigModel(BaseSettings):
 
     # Task intervals (in seconds)
     heartbeat_interval: int = Field(
-        60, ge=60, description="Interval between heartbeat signals to the control plane"
+        default=30,
+        ge=30,
+        description="Interval between heartbeat signals to the control plane",
     )
     runner_interval: int = Field(
-        5, ge=5, description="Interval for executing queued resiliency scenarios"
+        default=5,
+        ge=5,
+        description="Interval for executing queued resiliency scenarios",
     )
     resiliency_scenario_poll_interval: int = Field(
-        60,
+        default=60,
         ge=60,
         description="Interval for polling control plane for new resiliency scenario",
     )

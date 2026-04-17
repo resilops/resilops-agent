@@ -35,6 +35,7 @@ class HealthMonitorWorker(PeriodicWorker):
 
     async def run_iteration(self) -> Optional[Dict[str, Any]]:
         """Send one heartbeat request to the control plane."""
+        logger.info("Sending heartbeat request")
         await self.client.send_heartbeat()
         return None
 

@@ -7,7 +7,7 @@ AGENT_HEARTBEAT_PATH = "/api/v1/agent/heartbeat"
 AGENT_CLAIMS_PATH = "/api/v1/agent/scenario-queue/claims"
 AGENT_CLAIM_ACK_PATH = "/api/v1/agent/scenario-claims/{claim_id}/ack"
 AGENT_SCENARIO_PATH = "/api/v1/agent/scenario/{scenario_id}"
-AGENT_CLUSTER_SNAPSHOT: str = "/api/v1/agent/cluster/snapshot"
+AGENT_CLUSTER_SNAPSHOT: str = "/api/v1/agent/snapshots/cluster"
 
 DISCOVERY_K8S_LEASE_NAME: str = "resilience-agent-snapshot-discovery-lease"
 

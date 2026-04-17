@@ -54,7 +54,7 @@ async def agent_heartbeat(request: Request):
     return {"health": payload.get("health")}
 
 
-@app.post("/api/v1/agent/cluster/snapshot")
+@app.post("/api/v1/agent/snapshots/cluster")
 async def cluster_snapshot(request: Request):
     payload = await request.json()
     print(payload)
