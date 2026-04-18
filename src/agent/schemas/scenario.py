@@ -1,22 +1,21 @@
-from pydantic import BaseModel, Field
+from pydantic import UUID4, BaseModel, Field
 from reslib.schemas.scenario import ResiliencyScenario as LibResiliencyScenario
 
-from agent.constants import ResiliencyScenarioClaimStatusEnum
+from agent.constants import ScenarioClaimStatus
 
 
-class ResiliencyScenario(LibResiliencyScenario):
+class ScenarioRun(BaseModel):
     """Scenario model returned by the control plane."""
 
-    id: int = Field(..., description="Scenario id")
-    run_id: int = Field(..., description="Resiliency scenario run id")
+    id: int = Field(..., description="Run ID")
+    scenario_id: int = Field(..., description="Workload scenario ID")
+    config: LibResiliencyScenario
 
 
-class ResiliencyScenarioClaim(BaseModel):
+class ScenarioClaim(BaseModel):
     """Claim model representing a scheduled scenario assignment."""
 
-    id: int = Field(..., description="Claim id")
+    id: UUID4 = Field(..., description="Claim id")
     run_id: int = Field(..., description="Resiliency scenario run id")
     scenario_id: int = Field(..., description="Scenario id")
-    status: ResiliencyScenarioClaimStatusEnum = Field(
-        default=None, description="Claim status"
-    )
+    status: ScenarioClaimStatus = Field(default=None, description="Claim status")

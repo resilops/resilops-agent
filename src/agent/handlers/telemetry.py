@@ -66,7 +66,7 @@ class AgentTelemetry:
         )
 
 
-class AgentTelemetryWithRunContext(BaseTelemetry):
+class RunTelemetry(BaseTelemetry):
     """Execution-scoped telemetry adapter that adds run and scenario context."""
 
     def __init__(

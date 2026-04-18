@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class M2MAccessTokenResponse(BaseModel):
+class AccessToken(BaseModel):
     """Access token response for M2M"""
 
     access_token: str = Field(..., description="Short lived access token")

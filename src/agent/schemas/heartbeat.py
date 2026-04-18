@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from agent.constants import AgentHealthEnum
 
 
-class HeartbeatRequestModel(BaseModel):
+class HeartbeatRequest(BaseModel):
     """Request schema for heartbeat endpoint"""
 
     health: AgentHealthEnum = Field(
@@ -29,7 +29,7 @@ class HeartbeatRequestModel(BaseModel):
     )
 
 
-class HeartbeatResponseModel(BaseModel):
+class HeartbeatResponse(BaseModel):
     """Heartbeat response from the control plane."""
 
     health: AgentHealthEnum = Field(..., description="Status of the agent")

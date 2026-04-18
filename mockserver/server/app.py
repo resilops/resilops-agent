@@ -83,7 +83,14 @@ async def scenario_claims(request: Request):
     ):
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    return [{"id": 1, "run_id": 1, "scenario_id": 1, "status": "pending"}]
+    return [
+        {
+            "id": "053fd5b8-5d2f-4d08-9c96-7b2758742fde",
+            "run_id": 1,
+            "scenario_id": 1,
+            "status": "pending",
+        }
+    ]
 
 
 @app.post("/api/v1/agent/scenario-claims/{claim_id}/ack")
@@ -104,7 +111,7 @@ async def agent_acknowledge_claim(claim_id: int):
         queued_scenario.state = ResiliencyScenarioStatusEnum.ACKNOWLEDGED
 
     return {
-        "id": 1,
+        "id": "053fd5b8-5d2f-4d08-9c96-7b2758742fde",
         "scenario_id": 1,
         "status": ResiliencyScenarioStatusEnum.ACKNOWLEDGED.value,
     }
@@ -115,10 +122,10 @@ async def agent_acknowledge_claim(claim_id: int):
 # -------------------------------------------------------------------
 
 
-@app.get("/api/v1/agent/scenario/{scenario_id}")
-async def agent_fetch_scenario(scenario_id: int):
+@app.get("/api/v1/agent/scenarios/{scenario_id}/runs/{run_id}")
+async def agent_fetch_scenario_run(scenario_id: int, run_id: int):
     """Fetch a resiliency scenario from a suite."""
-    return queued_scenario
+    return {"id": run_id, "scenario_id": scenario_id, "config": queued_scenario}
 
 
 # -------------------------------------------------------------------

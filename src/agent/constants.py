@@ -6,7 +6,7 @@ AUTH_SERVICE_M2M_TOKEN_ISSUE_PATH: str = "/api/v1/m2m/token"
 AGENT_HEARTBEAT_PATH = "/api/v1/agent/heartbeat"
 AGENT_CLAIMS_PATH = "/api/v1/agent/scenario-queue/claims"
 AGENT_CLAIM_ACK_PATH = "/api/v1/agent/scenario-claims/{claim_id}/ack"
-AGENT_SCENARIO_PATH = "/api/v1/agent/scenario/{scenario_id}"
+AGENT_SCENARIO_RUN_PATH = "/api/v1/agent/scenarios/{scenario_id}/runs/{run_id}"
 AGENT_CLUSTER_SNAPSHOT: str = "/api/v1/agent/snapshots/cluster"
 
 DISCOVERY_K8S_LEASE_NAME: str = "resilience-agent-snapshot-discovery-lease"
@@ -21,6 +21,9 @@ class AgentOAuthScopes(Enum):
     heartbeat = "res:oauth:scope:agent:heartbeat"
     config_read = "res:oauth:scope:agent:config:read"
     cluster_snapshot_upsert = "res:oauth:scope:agent:cluster:snapshot:upsert"
+    claims_read = "res:oauth:scope:agent:claims:read"
+    claim_ack = "res:oauth:scope:agent:claims:ack"
+    scenario_run_config_read = "res:oauth:scope:agent:scenario_run_config:read"
 
     @classmethod
     def scopes(cls) -> str:
@@ -35,7 +38,7 @@ class AgentHealthEnum(str, Enum):
     degraded = "degraded"
 
 
-class ResiliencyScenarioClaimStatusEnum(str, Enum):
+class ScenarioClaimStatus(str, Enum):
     """Resiliency scenario claims status."""
 
     pending = "pending"

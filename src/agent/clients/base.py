@@ -6,7 +6,7 @@ import httpx
 
 from agent import helper as h
 from agent.exceptions import APIRequestError
-from agent.schemas.config import AgentConfigModel
+from agent.schemas.config import AgentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class BaseAPIClient:
     RETRY_DELAY: float = 1.0
     REQUEST_TIMEOUT: float = 3.0
 
-    def __init__(self, config: AgentConfigModel) -> None:
+    def __init__(self, config: AgentConfig) -> None:
         """Store shared configuration for API clients."""
         self.config = config
 

@@ -1,6 +1,6 @@
 {
-    "id": 1,
-    "run_id": 2,
+    "id": 2,
+    "scenario_id": 2,
     "name": "hpa_cpu_stress",
     "title": "Do the application scale according to the customer needs?",
     "description": "We expect HPA is configured and kubernetes pods scale within a timeframe.",

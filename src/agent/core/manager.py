@@ -23,7 +23,7 @@ class WorkerManager:
         self.shutdown_event = shutdown_event
 
     def start_all_workers(self) -> None:
-        """Create tasks for all workers and register them in runtime state."""
+        """Create tasks for all workers and register them in agent state."""
         worker_tasks = [
             asyncio.create_task(worker.run_continuously(), name=worker.WORKER_NAME)
             for worker in self.workers

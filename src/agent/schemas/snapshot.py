@@ -4,7 +4,7 @@ from pydantic import UUID4, BaseModel, Field
 from reslib.k8s.schema import NamespaceState
 
 
-class ClusterSnapshotRequestModel(BaseModel):
+class ClusterSnapshot(BaseModel):
     """
     Request model representing a snapshot of a Kubernetes cluster state.
 

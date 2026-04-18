@@ -6,16 +6,16 @@ from typing import Any, Dict, Optional
 from agent.core.leader import KubernetesLeaderElection
 from agent.core.worker import PeriodicWorker
 from agent.exceptions import NotLeaderError
-from agent.handlers.snapshot import NamespaceSnapshotHandler
+from agent.handlers.snapshot import SnapshotHandler
 from agent.handlers.state import AgentStateHandler
 from agent.handlers.telemetry import AgentTelemetry
-from agent.schemas.config import AgentConfigModel
+from agent.schemas.config import AgentConfig
 from agent.schemas.event import EventEnum, EventPayload
 
 logger = logging.getLogger(__name__)
 
 
-class NamespacesSnapshotWorker(PeriodicWorker):
+class SnapshotWorker(PeriodicWorker):
     """Run namespace discovery snapshots when this instance is leader."""
 
     WORKER_NAME: str = "namespaces_snapshot"
@@ -24,11 +24,11 @@ class NamespacesSnapshotWorker(PeriodicWorker):
 
     def __init__(
         self,
-        config: AgentConfigModel,
+        config: AgentConfig,
         state_handler: AgentStateHandler,
         telemetry: AgentTelemetry,
         shutdown_event: asyncio.Event,
-        snapshot_handler: NamespaceSnapshotHandler,
+        snapshot_handler: SnapshotHandler,
         leader_election: KubernetesLeaderElection,
     ):
         """Create the namespace snapshot worker."""
@@ -85,15 +85,15 @@ class NamespacesSnapshotWorker(PeriodicWorker):
         sync_id: uuid.UUID = await self.snapshot_handler.capture_and_publish_snapshot()
         return {"sync_uuid": str(sync_id)}
 
-    async def handle_iteration_success(self, context: Dict[str, Any]) -> None:
+    async def handle_iteration_success(self, result: Dict[str, Any]) -> None:
         """Mark startup complete and emit a successful discovery event."""
         self._has_succeeded_once = True
-        sync_uuid = context.get("sync_uuid")
+        sync_uuid = result.get("sync_uuid")
         self._emit_snapshot_event(EventEnum.DISCOVERY_SUCCESS, sync_uuid=sync_uuid)
 
     async def handle_iteration_error(
         self,
-        context: Dict[str, Any],
+        result: Dict[str, Any],
         error: Exception,
     ) -> None:
         """Emit failure telemetry unless the worker simply lost leadership."""
@@ -101,7 +101,7 @@ class NamespacesSnapshotWorker(PeriodicWorker):
             logger.debug("Not leader, so skipping snapshot execution.")
             return
 
-        sync_uuid = context.get("sync_uuid")
+        sync_uuid = result.get("sync_uuid")
         self._emit_snapshot_event(
             EventEnum.DISCOVERY_FAILED,
             sync_uuid=sync_uuid,

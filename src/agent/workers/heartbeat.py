@@ -6,12 +6,12 @@ from agent.clients.control_plane import ControlPlaneClient
 from agent.core.worker import PeriodicWorker
 from agent.handlers.state import AgentStateHandler
 from agent.handlers.telemetry import AgentTelemetry
-from agent.schemas.config import AgentConfigModel
+from agent.schemas.config import AgentConfig
 
 logger = logging.getLogger(__name__)
 
 
-class HealthMonitorWorker(PeriodicWorker):
+class HeartbeatWorker(PeriodicWorker):
     """Send periodic heartbeats and reflect the result in agent health state."""
 
     WORKER_NAME: str = "health_monitor"
@@ -19,7 +19,7 @@ class HealthMonitorWorker(PeriodicWorker):
 
     def __init__(
         self,
-        config: AgentConfigModel,
+        config: AgentConfig,
         state_handler: AgentStateHandler,
         telemetry: AgentTelemetry,
         shutdown_event: asyncio.Event,
@@ -39,12 +39,12 @@ class HealthMonitorWorker(PeriodicWorker):
         await self.client.send_heartbeat()
         return None
 
-    async def handle_iteration_success(self, context: Dict[str, Any]) -> None:
+    async def handle_iteration_success(self, result: Dict[str, Any]) -> None:
         """Mark the agent healthy after a successful heartbeat."""
         self.state_handler.agent.set_health(healthy=True)
 
     async def handle_iteration_error(
-        self, context: Dict[str, Any], error: Exception
+        self, result: Dict[str, Any], error: Exception
     ) -> None:
         """Mark the agent unhealthy and log the heartbeat failure."""
         logger.error("Health report request failed", exc_info=error)

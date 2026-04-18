@@ -23,7 +23,7 @@ def _get_app_version() -> str:
 _APP_VERSION = _get_app_version()
 
 
-class AgentConfigModel(BaseSettings):
+class AgentConfig(BaseSettings):
     """Runtime configuration loaded from `RESILTY_AGENT_` environment variables."""
 
     model_config = SettingsConfigDict(env_prefix="RESILTY_AGENT_")

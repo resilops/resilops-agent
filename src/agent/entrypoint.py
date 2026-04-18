@@ -6,16 +6,16 @@ from agent.constants import DISCOVERY_K8S_LEASE_NAME
 from agent.core.leader import KubernetesLeaderElection
 from agent.core.lifecycle import LifecycleManager
 from agent.core.manager import WorkerManager
-from agent.handlers.runner import ResiliencyScenarioRunner
-from agent.handlers.snapshot import NamespaceSnapshotHandler
+from agent.handlers.runner import ScenarioRunner
+from agent.handlers.snapshot import SnapshotHandler
 from agent.handlers.state import AgentStateHandler
 from agent.handlers.telemetry import AgentTelemetry
 from agent.logging import setup_logging
-from agent.schemas.config import AgentConfigModel
-from agent.workers.heartbeat import HealthMonitorWorker
-from agent.workers.runner import ResiliencyScenarioRunnerWorker
-from agent.workers.scheduler import ResiliencyScenarioSchedulerWorker
-from agent.workers.snapshot import NamespacesSnapshotWorker
+from agent.schemas.config import AgentConfig
+from agent.workers.heartbeat import HeartbeatWorker
+from agent.workers.runner import ScenarioRunnerWorker
+from agent.workers.scheduler import ScenarioSchedulerWorker
+from agent.workers.snapshot import SnapshotWorker
 
 
 async def main() -> None:
@@ -27,7 +27,7 @@ async def main() -> None:
     shutdown_event = asyncio.Event()
 
     # Load agent configuration from environment
-    config = AgentConfigModel()  # noqa
+    config = AgentConfig()  # noqa
 
     # Initialize API client
     control_plane_client = ControlPlaneClient(
@@ -47,34 +47,32 @@ async def main() -> None:
 
     # Create background workers
     workers = [
-        HealthMonitorWorker(
+        HeartbeatWorker(
             config=config,
             state_handler=state_handler,
             telemetry=telemetry,
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
-        ResiliencyScenarioSchedulerWorker(
+        ScenarioSchedulerWorker(
             config=config,
             state_handler=state_handler,
             telemetry=telemetry,
             shutdown_event=shutdown_event,
             client=control_plane_client,
         ),
-        ResiliencyScenarioRunnerWorker(
+        ScenarioRunnerWorker(
             config=config,
             state_handler=state_handler,
             telemetry=telemetry,
-            runner=ResiliencyScenarioRunner(
-                client=control_plane_client, telemetry=telemetry
-            ),
+            runner=ScenarioRunner(client=control_plane_client, telemetry=telemetry),
             shutdown_event=shutdown_event,
         ),
-        NamespacesSnapshotWorker(
+        SnapshotWorker(
             config=config,
             state_handler=state_handler,
             telemetry=telemetry,
-            snapshot_handler=NamespaceSnapshotHandler(
+            snapshot_handler=SnapshotHandler(
                 config=config,
                 client=control_plane_client,
                 leader_election=leader_election,

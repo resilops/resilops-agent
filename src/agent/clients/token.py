@@ -11,8 +11,8 @@ from agent.constants import (
     AgentOAuthScopes,
 )
 from agent.exceptions import AuthServiceError
-from agent.schemas.config import AgentConfigModel
-from agent.schemas.token import M2MAccessTokenResponse
+from agent.schemas.config import AgentConfig
+from agent.schemas.token import AccessToken
 
 logger = logging.getLogger(__name__)
 
@@ -20,17 +20,17 @@ logger = logging.getLogger(__name__)
 class AuthServiceClient(BaseAPIClient):
     """Client for authentication-related upstream API operations."""
 
-    def __init__(self, config: AgentConfigModel):
+    def __init__(self, config: AgentConfig):
         super().__init__(config=config)
         self._token_lock = asyncio.Lock()
-        self._auth_m2m_token: Optional[M2MAccessTokenResponse] = None
+        self._auth_m2m_token: Optional[AccessToken] = None
 
     @property
     def host(self) -> str:
         """Return the host endpoint URL."""
         return self.config.auth_service_host
 
-    async def get_m2m_token(self) -> M2MAccessTokenResponse:
+    async def get_m2m_token(self) -> AccessToken:
         """Return a cached M2M token or fetch a fresh one when required."""
         if self._auth_m2m_token and not self._auth_m2m_token.is_expired:
             return self._auth_m2m_token
@@ -57,7 +57,7 @@ class AuthServiceClient(BaseAPIClient):
                 logger.exception("M2M access token request failed")
                 raise AuthServiceError("M2M access token request failed")
 
-            response = M2MAccessTokenResponse(**resp)
+            response = AccessToken(**resp)
             self._auth_m2m_token = response
 
         return response

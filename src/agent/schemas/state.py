@@ -4,10 +4,10 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from agent.schemas.scenario import ResiliencyScenarioClaim
+from agent.schemas.scenario import ScenarioClaim
 
 
-class AgentHealthStatusEnum(str, Enum):
+class AgentHealthState(str, Enum):
     """Represents the overall health of the agent."""
 
     HEALTHY = "healthy"
@@ -15,7 +15,7 @@ class AgentHealthStatusEnum(str, Enum):
     UNKNOWN = "unknown"
 
 
-class RunnerLifecycleStateEnum(str, Enum):
+class RunnerStatus(str, Enum):
     """Represents the execution state of the resiliency scenario runner."""
 
     RUNNING = "running"
@@ -23,18 +23,18 @@ class RunnerLifecycleStateEnum(str, Enum):
     IDLE = "idle"
 
 
-class RunnerRuntimeState(BaseModel):
+class RunnerState(BaseModel):
     """
     In-memory runtime state of resiliency scenario processing.
 
     Tracks the currently assigned scenario and its lifecycle state.
     """
 
-    claim: Optional[ResiliencyScenarioClaim] = None
-    state: RunnerLifecycleStateEnum = RunnerLifecycleStateEnum.IDLE
+    claim: Optional[ScenarioClaim] = None
+    state: RunnerStatus = RunnerStatus.IDLE
 
 
-class AgentRuntimeState(BaseModel):
+class AgentState(BaseModel):
     """
     In-memory runtime state of the agent.
 
@@ -43,6 +43,6 @@ class AgentRuntimeState(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    health: AgentHealthStatusEnum = AgentHealthStatusEnum.UNKNOWN
-    runner: RunnerRuntimeState = Field(default_factory=RunnerRuntimeState)
+    health: AgentHealthState = AgentHealthState.UNKNOWN
+    runner: RunnerState = Field(default_factory=RunnerState)
     running_workers: List[asyncio.Task] = Field(default_factory=list)

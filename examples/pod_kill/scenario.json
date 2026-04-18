@@ -1,6 +1,6 @@
 {
     "id": 1,
-    "run_id": 2,
+    "scenario_id": 1,
     "name": "pod_kill",
     "title": "Do we remain available in face of pod going down?",
     "description": "We expect Kubernetes to handle the situation gracefully when a pod goes down",

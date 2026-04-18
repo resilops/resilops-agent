@@ -3,27 +3,27 @@ import logging
 from typing import Any, Dict, Optional
 
 from agent.core.worker import PeriodicWorker
-from agent.handlers.runner import ResiliencyScenarioRunner
+from agent.handlers.runner import ScenarioRunner
 from agent.handlers.state import AgentStateHandler
 from agent.handlers.telemetry import AgentTelemetry
-from agent.schemas.config import AgentConfigModel
+from agent.schemas.config import AgentConfig
 from agent.schemas.event import EventEnum, EventPayload
-from agent.schemas.scenario import ResiliencyScenarioClaim
+from agent.schemas.scenario import ScenarioClaim
 
 logger = logging.getLogger(__name__)
 
 
-class ResiliencyScenarioRunnerWorker(PeriodicWorker):
+class ScenarioRunnerWorker(PeriodicWorker):
     """Execute queued scenario claims when the agent is healthy."""
 
     WORKER_NAME: str = "scenario_executor"
 
     def __init__(
         self,
-        config: AgentConfigModel,
+        config: AgentConfig,
         state_handler: AgentStateHandler,
         telemetry: AgentTelemetry,
-        runner: ResiliencyScenarioRunner,
+        runner: ScenarioRunner,
         shutdown_event: asyncio.Event,
     ):
         """Create the scenario runner worker."""
@@ -33,7 +33,7 @@ class ResiliencyScenarioRunnerWorker(PeriodicWorker):
     def _emit_claim_event(
         self,
         event_name: EventEnum,
-        claim: ResiliencyScenarioClaim,
+        claim: ScenarioClaim,
         data: Optional[Dict[str, Any]] = None,
         error: Optional[str] = None,
     ) -> None:
@@ -61,28 +61,28 @@ class ResiliencyScenarioRunnerWorker(PeriodicWorker):
 
     async def run_iteration(self) -> Optional[Dict[str, Any]]:
         """Execute the queued claim and return it as iteration context."""
-        claim: ResiliencyScenarioClaim = self.state_handler.runner.current_claim
+        claim: ScenarioClaim = self.state_handler.runner.current_claim
         self.state_handler.runner.mark_running()
         self._emit_claim_event(EventEnum.SCENARIO_EXECUTING, claim)
         await self.runner.execute_claim(claim)
         return {"claim": claim}
 
-    async def handle_iteration_success(self, context: Dict[str, Any]) -> None:
+    async def handle_iteration_success(self, result: Dict[str, Any]) -> None:
         """Reset runner state and emit a success event for the claim."""
-        claim: ResiliencyScenarioClaim = context.get("claim")
+        claim: ScenarioClaim = result.get("claim")
         self.state_handler.runner.reset_to_idle()
         self._emit_claim_event(EventEnum.SCENARIO_EXECUTION_SUCCESS, claim)
 
     async def handle_iteration_error(
-        self, context: Dict[str, Any], error: Exception
+        self, result: Dict[str, Any], error: Exception
     ) -> None:
         """Reset runner state and emit a failure event for the claim."""
-        claim: ResiliencyScenarioClaim = context.get("claim")
+        claim: ScenarioClaim = result.get("claim")
 
         self.state_handler.runner.reset_to_idle()
         self._emit_claim_event(
             EventEnum.SCENARIO_EXECUTION_FAILED,
             claim,
-            data=context,
+            data=result,
             error=error.__class__.__name__,
         )

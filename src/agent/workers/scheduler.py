@@ -7,21 +7,21 @@ from agent.core.worker import PeriodicWorker
 from agent.exceptions import APIRequestError
 from agent.handlers.state import AgentStateHandler
 from agent.handlers.telemetry import AgentTelemetry
-from agent.schemas.config import AgentConfigModel
+from agent.schemas.config import AgentConfig
 from agent.schemas.event import EventEnum, EventPayload
-from agent.schemas.scenario import ResiliencyScenarioClaim
+from agent.schemas.scenario import ScenarioClaim
 
 logger = logging.getLogger(__name__)
 
 
-class ResiliencyScenarioSchedulerWorker(PeriodicWorker):
+class ScenarioSchedulerWorker(PeriodicWorker):
     """Poll the control plane for scenario claims and queue them locally."""
 
     WORKER_NAME: str = "scenario_scheduler"
 
     def __init__(
         self,
-        config: AgentConfigModel,
+        config: AgentConfig,
         state_handler: AgentStateHandler,
         telemetry: AgentTelemetry,
         shutdown_event: asyncio.Event,
@@ -44,19 +44,18 @@ class ResiliencyScenarioSchedulerWorker(PeriodicWorker):
         """Poll only when the agent is healthy and the runner is idle."""
         return self.state_handler.agent.is_healthy and self.state_handler.runner.is_idle
 
-    async def run_iteration(self) -> Optional[Dict[str, ResiliencyScenarioClaim]]:
+    async def run_iteration(self) -> Optional[Dict[str, ScenarioClaim]]:
         """Fetch and acknowledge the next claim, if one is available."""
-        claim: Optional[ResiliencyScenarioClaim] = (
-            await self.client.fetch_scenario_claim()
-        )
+        logger.info("Checking if there are any new claims")
+        claim: Optional[ScenarioClaim] = await self.client.fetch_scenario_claim()
         if claim:
             await self.client.ack_scenario_claim(claim.id)
 
         return {"claim": claim}
 
-    async def handle_iteration_success(self, context: Dict[str, Any]) -> None:
+    async def handle_iteration_success(self, result: Dict[str, Any]) -> None:
         """Queue the fetched claim and emit a queued event."""
-        claim: Optional[ResiliencyScenarioClaim] = context.get("claim")
+        claim: Optional[ScenarioClaim] = result.get("claim")
         if not claim:
             return
 
@@ -68,7 +67,7 @@ class ResiliencyScenarioSchedulerWorker(PeriodicWorker):
         )
 
     async def handle_iteration_error(
-        self, context: Dict[str, Any], error: Exception
+        self, result: Dict[str, Any], error: Exception
     ) -> None:
         """Handle polling errors without enqueueing a claim."""
         if isinstance(error, APIRequestError):

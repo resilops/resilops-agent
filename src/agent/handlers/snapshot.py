@@ -10,13 +10,13 @@ from reslib.k8s.schema import DiscoveryNamespaceConfigSchema
 from agent.clients.control_plane import ControlPlaneClient
 from agent.core.leader import KubernetesLeaderElection
 from agent.exceptions import NotLeaderError
-from agent.schemas.config import AgentConfigModel
-from agent.schemas.snapshot import ClusterSnapshotRequestModel
+from agent.schemas.config import AgentConfig
+from agent.schemas.snapshot import ClusterSnapshot
 
 logger = logging.getLogger(__name__)
 
 
-class NamespaceSnapshotHandler:
+class SnapshotHandler:
     """Handles batched namespace discovery and snapshot delivery."""
 
     DISCOVERY_BATCH_SIZE = 5
@@ -24,7 +24,7 @@ class NamespaceSnapshotHandler:
 
     def __init__(
         self,
-        config: AgentConfigModel,
+        config: AgentConfig,
         client: ControlPlaneClient,
         leader_election: KubernetesLeaderElection,
     ) -> None:
@@ -88,14 +88,14 @@ class NamespaceSnapshotHandler:
                     asyncio.to_thread(discover_namespaces, discovery_config),
                     timeout=100,  # safety timeout
                 )
-                payload = ClusterSnapshotRequestModel(
+                payload = ClusterSnapshot(
                     sync_uuid=sync_uuid,
                     namespaces=namespace_states,
                 )
                 await self.client.publish_cluster_snapshot(payload=payload)
 
             except Exception as exc:
-                setattr(exc, "context", {"sync_uuid": sync_uuid})
+                setattr(exc, "result", {"sync_uuid": sync_uuid})
                 raise
 
             await self._sleep_with_jitter()

@@ -1,66 +1,66 @@
 import asyncio
 from typing import List, Optional
 
-from agent.schemas.scenario import ResiliencyScenarioClaim
+from agent.schemas.scenario import ScenarioClaim
 from agent.schemas.state import (
-    AgentHealthStatusEnum,
-    AgentRuntimeState,
-    RunnerLifecycleStateEnum,
-    RunnerRuntimeState,
+    AgentHealthState,
+    AgentState,
+    RunnerState,
+    RunnerStatus,
 )
 
 
-class RunnerRuntimeStateHandler:
+class RunnerStateHandler:
     """Manages lifecycle transitions for a resiliency scenario execution."""
 
-    def __init__(self, state: RunnerRuntimeState):
+    def __init__(self, state: RunnerState):
         self._state = state
 
     @property
-    def current_claim(self) -> Optional[ResiliencyScenarioClaim]:
+    def current_claim(self) -> Optional[ScenarioClaim]:
         """Return the claim currently assigned to the runner, if any."""
         return self._state.claim
 
     @property
     def is_idle(self) -> bool:
         """Return whether the runner is currently idle."""
-        return self._state.state == RunnerLifecycleStateEnum.IDLE
+        return self._state.state == RunnerStatus.IDLE
 
     @property
     def is_queued(self) -> bool:
         """Return whether a claim is queued for execution."""
-        return self._state.state == RunnerLifecycleStateEnum.QUEUED
+        return self._state.state == RunnerStatus.QUEUED
 
-    def enqueue(self, claim: ResiliencyScenarioClaim) -> None:
+    def enqueue(self, claim: ScenarioClaim) -> None:
         """Queue a claim for execution when the runner is idle."""
         if not self.is_idle:
             raise RuntimeError("Scenario claim execution slot is busy.")
 
         self._state.claim = claim
-        self._state.state = RunnerLifecycleStateEnum.QUEUED
+        self._state.state = RunnerStatus.QUEUED
 
     def mark_running(self) -> None:
         """Transition the runner from queued to running."""
         if not self.is_queued:
             raise RuntimeError("Cannot start execution: no claim queued.")
 
-        self._state.state = RunnerLifecycleStateEnum.RUNNING
+        self._state.state = RunnerStatus.RUNNING
 
     def reset_to_idle(self) -> None:
         """Clear the current claim and reset the runner to idle."""
         self._state.claim = None
-        self._state.state = RunnerLifecycleStateEnum.IDLE
+        self._state.state = RunnerStatus.IDLE
 
 
-class AgentRuntimeStateHandler:
+class AgentStateView:
     """Manages agent-level runtime state."""
 
-    def __init__(self, agent: AgentRuntimeState):
+    def __init__(self, agent: AgentState):
         self._agent = agent
 
     @property
     def is_healthy(self) -> bool:
-        return self._agent.health == AgentHealthStatusEnum.HEALTHY
+        return self._agent.health == AgentHealthState.HEALTHY
 
     @property
     def current_workers(self) -> List[asyncio.Task]:
@@ -74,9 +74,7 @@ class AgentRuntimeStateHandler:
     def set_health(self, healthy: bool) -> None:
         """Update agent health status."""
         self._agent.health = (
-            AgentHealthStatusEnum.HEALTHY
-            if healthy
-            else AgentHealthStatusEnum.UNHEALTHY
+            AgentHealthState.HEALTHY if healthy else AgentHealthState.UNHEALTHY
         )
 
 
@@ -84,6 +82,6 @@ class AgentStateHandler:
     """Facade exposing the mutable runtime state used by workers."""
 
     def __init__(self) -> None:
-        state = AgentRuntimeState()
-        self.agent = AgentRuntimeStateHandler(state)
-        self.runner = RunnerRuntimeStateHandler(state.runner)
+        state = AgentState()
+        self.agent = AgentStateView(state)
+        self.runner = RunnerStateHandler(state.runner)

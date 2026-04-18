@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from agent.handlers.state import AgentStateHandler
 from agent.handlers.telemetry import AgentTelemetry
-from agent.schemas.config import AgentConfigModel
+from agent.schemas.config import AgentConfig
 
 
 class BaseWorker(ABC):
@@ -22,16 +22,16 @@ class BaseWorker(ABC):
     async def run_iteration(self) -> Optional[Dict[str, Any]]:
         """
         Execute one worker iteration.
-        Returns optional context data for hooks.
+        Returns optional result data for hooks.
         """
 
     @abstractmethod
-    async def handle_iteration_success(self, context: Dict[str, Any]) -> None:
+    async def handle_iteration_success(self, result: Dict[str, Any]) -> None:
         """Called after successful execution."""
 
     @abstractmethod
     async def handle_iteration_error(
-        self, context: Dict[str, Any], error: Exception
+        self, result: Dict[str, Any], error: Exception
     ) -> None:
         """Called when execution fails."""
 
@@ -47,7 +47,7 @@ class PeriodicWorker(BaseWorker):  # noqa
 
     def __init__(
         self,
-        config: AgentConfigModel,
+        config: AgentConfig,
         state_handler: AgentStateHandler,
         telemetry: AgentTelemetry,
         shutdown_event: asyncio.Event,
@@ -61,11 +61,11 @@ class PeriodicWorker(BaseWorker):  # noqa
     async def _execute_safely(self) -> None:
         """Execute one iteration with proper error handling."""
         try:
-            context = await self.run_iteration() or {}
-            await self.handle_iteration_success(context)
+            result = await self.run_iteration() or {}
+            await self.handle_iteration_success(result)
         except Exception as error:
-            context = getattr(error, "context", {})
-            await self.handle_iteration_error(context, error)
+            result = getattr(error, "result", getattr(error, "context", {}))
+            await self.handle_iteration_error(result, error)
 
     async def should_execute(self) -> bool:
         """Default precondition: always execute unless overridden."""
