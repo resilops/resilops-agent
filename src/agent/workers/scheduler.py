@@ -62,7 +62,6 @@ class ScenarioSchedulerWorker(PeriodicWorker):
         self.state_handler.runner.enqueue(claim)
         self.telemetry.emit_event(
             event=EventPayload(event_name=EventEnum.SCENARIO_QUEUED),
-            scenario_id=claim.scenario_id,
             run_id=claim.run_id,
         )
 

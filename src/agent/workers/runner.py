@@ -40,7 +40,6 @@ class ScenarioRunnerWorker(PeriodicWorker):
         """Emit a telemetry event tied to a specific scenario claim."""
         self.telemetry.emit_event(
             event=EventPayload(event_name=event_name, data=data, error=error),
-            scenario_id=claim.scenario_id,
             run_id=claim.run_id,
         )
 

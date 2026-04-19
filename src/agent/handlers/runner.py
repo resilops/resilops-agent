@@ -27,7 +27,6 @@ class ScenarioRunner:
                 telemetry=RunTelemetry(
                     telemetry=self.telemetry,
                     run_id=scenario_run.id,
-                    scenario_id=scenario_run.scenario_id,
                 ),
             )
         except Exception as exc:

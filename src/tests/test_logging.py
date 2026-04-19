@@ -1,9 +1,10 @@
 import logging
 import os
+import re
 
 import pythonjsonlogger
 
-from agent.logging import setup_logging
+from agent.logging import UTCJsonFormatter, setup_logging
 
 
 def test_setup_logging_creates_loggers(monkeypatch):
@@ -83,3 +84,27 @@ def test_logging_integration_handler_types_and_levels():
         root_logger.handlers[0].formatter, pythonjsonlogger.json.JsonFormatter
     )
     assert root_logger.level == logging.DEBUG
+
+
+def test_utc_json_formatter_emits_rfc3339_utc_timestamp():
+    """Ensure timestamps are emitted as RFC 3339 UTC strings."""
+    formatter = UTCJsonFormatter(
+        "%(asctime)s %(levelname)s %(name)s %(message)s",
+        rename_fields={"asctime": "time", "levelname": "level"},
+        json_indent=None,
+    )
+    record = logging.LogRecord(
+        name="agent",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="hello",
+        args=(),
+        exc_info=None,
+    )
+    record.created = 1_700_000_000.123
+
+    output = formatter.format(record)
+
+    assert '"time": "2023-11-14T22:13:20.123Z"' in output
+    assert re.search(r'"time": "\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z"', output)

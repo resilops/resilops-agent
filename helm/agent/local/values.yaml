@@ -15,9 +15,9 @@ envVar:
 sidecar:
   env:
     - name: FLUENTBIT_REMOTE_HOST
-      value: controlplane.resiltyio.svc.cluster.local
+      value: host.minikube.internal
     - name: FLUENTBIT_REMOTE_PORT
-      value: "8000"
+      value: "9000"
     - name: FLUENTBIT_REMOTE_TLS
       value: "Off"
     - name: FLUENTBIT_OAUTH_TOKEN_URL

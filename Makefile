@@ -80,6 +80,10 @@ forward: ## Port forward control plane to localhost
 logs: ## Log stream of agent
 	kubectl logs -f $$(kubectl get pod -n $(NAMESPACE) -l app.kubernetes.io/name=$(AGENT_RELEASE) -o jsonpath='{.items[0].metadata.name}') -n $(NAMESPACE)
 
+logs-fluentbit: ## Log stream of fluentbit
+	kubectl logs -f $$(kubectl get pod -n $(NAMESPACE) -l app.kubernetes.io/name=$(AGENT_RELEASE) -o jsonpath='{.items[0].metadata.name}') -c fluent-bit-sidecar -n $(NAMESPACE)
+
+
 nginx-up: ## Deploy nginx with hpa
 	@echo "🐳 Building nginx container"
 	docker build -f ./docker/NginxDockerfile -t resiltyio-nginx:local .

@@ -1,9 +1,19 @@
 import logging
 import logging.config
 import os
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 import pythonjsonlogger
+
+
+class UTCJsonFormatter(pythonjsonlogger.json.JsonFormatter):
+    """JSON formatter that emits RFC 3339 timestamps in UTC."""
+
+    def formatTime(self, record: logging.LogRecord, datefmt: str | None = None) -> str:
+        """Serialize log time as ISO 8601 / RFC 3339 UTC."""
+        dt = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        return dt.isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def setup_logging() -> None:
@@ -23,7 +33,7 @@ def setup_logging() -> None:
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "json": {
-                "()": pythonjsonlogger.json.JsonFormatter,
+                "()": UTCJsonFormatter,
                 "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
                 "rename_fields": {"asctime": "time", "levelname": "level"},
                 "json_indent": None,

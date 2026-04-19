@@ -85,7 +85,7 @@ file_config:
             Name        json
             Format      json
             Time_Key    time
-            Time_Format %Y-%m-%d %H:%M:%S,%L
+            Time_Format %Y-%m-%dT%H:%M:%S.%LZ
             Time_Keep   On
 
       input.conf: |
@@ -109,7 +109,7 @@ file_config:
         [FILTER]
             Name          rewrite_tag
             Match         resilty.agent
-            Rule          $type ^metrics$ resilty.agent.metrics true
+            Rule          $type ^metric$ resilty.agent.metrics true
 
       output.conf: |
         [OUTPUT]
@@ -117,7 +117,7 @@ file_config:
             Match                  resilty.agent.events
             Host                   ${FLUENTBIT_REMOTE_HOST}
             Port                   ${FLUENTBIT_REMOTE_PORT}
-            URI                    /api/v1/agent/ingest/events
+            URI                    /api/v1/agent/events
             Format                 json
             tls                    ${FLUENTBIT_REMOTE_TLS}
             Retry_Limit            20
@@ -133,7 +133,7 @@ file_config:
             Match                  resilty.agent.metrics
             Host                   ${FLUENTBIT_REMOTE_HOST}
             Port                   ${FLUENTBIT_REMOTE_PORT}
-            URI                    /api/v1/agent/ingest/metrics
+            URI                    /api/v1/agent/metrics
             Format                 json
             tls                    ${FLUENTBIT_REMOTE_TLS}
             Retry_Limit            10
