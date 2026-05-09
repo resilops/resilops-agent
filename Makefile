@@ -10,7 +10,7 @@ NAMESPACE ?= resiltyio
 APP_CHART ?= ../helm-charts/app
 AGENT_RELEASE ?= agent
 CONTROL_RELEASE ?= controlplane
-AGENT_CONFIG_VERSION ?= ltB0r8TdlGk
+AGENT_CONFIG_VERSION ?= OC551dpOH70
 RBAC_NAMESPACES ?= nginx,http-echo
 SECRETS_NAME ?= resilty-agent-secrets
 
