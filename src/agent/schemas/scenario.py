@@ -18,4 +18,5 @@ class ScenarioClaim(BaseModel):
     id: UUID4 = Field(..., description="Claim id")
     run_id: int = Field(..., description="Resiliency scenario run id")
     scenario_id: int = Field(..., description="Scenario id")
+    workload_id: int = Field(..., description="Workload id")
     status: ScenarioClaimStatus = Field(default=None, description="Claim status")

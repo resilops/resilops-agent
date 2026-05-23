@@ -1,7 +1,7 @@
 {
     "id": 1,
     "scenario_id": 1,
-    "name": "pod_kill",
+    "name": "pod_recovery",
     "title": "Do we remain available in face of pod going down?",
     "description": "We expect Kubernetes to handle the situation gracefully when a pod goes down",
     "template": {

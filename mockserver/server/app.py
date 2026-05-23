@@ -113,6 +113,7 @@ async def agent_acknowledge_claim(claim_id: int):
     return {
         "id": "053fd5b8-5d2f-4d08-9c96-7b2758742fde",
         "scenario_id": 1,
+        "workload_id": 1,
         "status": ResiliencyScenarioStatusEnum.ACKNOWLEDGED.value,
     }
 
