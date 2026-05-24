@@ -1,15 +1,12 @@
 {
-    "id": 1,
-    "scenario_id": 1,
-    "name": "pod_recovery",
-    "title": "Do we remain available in face of pod going down?",
-    "description": "We expect Kubernetes to handle the situation gracefully when a pod goes down",
+    "id": 4,
+    "scenario_id": 4,
+    "name": "rolling_restart",
+    "title": "Can the workload complete a rolling restart?",
+    "description": "Restart the workload and verify new pods start with the current image, configuration, secrets, and dependencies while availability is maintained.",
     "template": {
         "namespace": "nginx",
-        "workload": "nginx-deployment",
-        "quantity": 1,
-        "mode": "absolute",
-        "min_remaining_replicas": 1
+        "workload": "nginx-deployment"
     },
     "steps": [
         {
@@ -19,31 +16,24 @@
         },
         {
             "type": "guardrail",
+            "name": "ensure_minimum_replicas_for_restart",
+            "params": {}
+        },
+        {
+            "type": "guardrail",
             "name": "ensure_hpa_not_at_max_replicas",
             "params": {}
         },
         {
-            "type": "guardrail",
-            "name": "validate_min_remaining_replicas",
-            "params": {}
-        },
-        {
-            "type": "guardrail",
-            "name": "ensure_pdb_not_violated",
-            "params": {}
-        },
-        {
             "type": "action",
-            "name": "terminate_pods",
-            "params": {
-                "timeout_seconds":200
-            }
+            "name": "perform_rolling_restart",
+            "params": {}
         },
         {
             "type": "rollback",
-            "name": "wait_until_pod_respawn",
+            "name": "wait_until_rolling_restart_complete",
             "params": {
-                "timeout_seconds": 300
+                "timeout_seconds": 600
             }
         }
     ],

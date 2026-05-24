@@ -35,6 +35,7 @@ to run as a long-lived async worker process.
 |   |-- nginx-hpa.yaml
 |   |-- pod_eviction/
 |   |-- pod_recovery/
+|   |-- rolling_restart/
 |   `-- pod_scaling/
 |-- helm/                           Values used with the shared application Helm chart
 |   |-- agent/
@@ -155,6 +156,7 @@ For target namespaces, the agent needs access to:
 - Pod exec.
 - Events.
 - Deployments.
+- Deployment patch operations for rolling restart scenarios.
 - HorizontalPodAutoscalers.
 - PodDisruptionBudgets.
 - Pod metrics from `metrics.k8s.io`.
@@ -351,6 +353,7 @@ image. The related scenario files are:
 
 - `examples/pod_recovery/scenario.json`
 - `examples/pod_eviction/scenario.json`
+- `examples/rolling_restart/scenario.json`
 - `examples/pod_scaling/scenario.json`
 
 ### HTTP echo with HPA
