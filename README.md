@@ -33,7 +33,8 @@ to run as a long-lived async worker process.
 |-- examples/                       Kubernetes demo workloads and scenario payloads
 |   |-- http-echo.yaml
 |   |-- nginx-hpa.yaml
-|   |-- pod_kill/
+|   |-- pod_eviction/
+|   |-- pod_recovery/
 |   `-- pod_scaling/
 |-- helm/                           Values used with the shared application Helm chart
 |   |-- agent/
@@ -148,7 +149,8 @@ The Helm values define RBAC for the agent.
 
 For target namespaces, the agent needs access to:
 
-- Pods, including delete operations for pod termination scenarios.
+- Pods, including delete operations for pod recovery scenarios.
+- Pod evictions for voluntary disruption scenarios.
 - Services.
 - Pod exec.
 - Events.
@@ -247,7 +249,7 @@ Queue an example scenario:
 ```bash
 curl -X POST http://localhost:8000/api/v1/scenario-queue/items \
   -H 'Content-Type: application/json' \
-  --data @examples/pod_kill/scenario.json
+  --data @examples/pod_recovery/scenario.json
 ```
 
 The mock server stores one queued scenario in memory.
@@ -347,7 +349,8 @@ make nginx-down
 This uses `examples/nginx-hpa.yaml` and the local `resiltyio-nginx:local`
 image. The related scenario files are:
 
-- `examples/pod_kill/scenario.json`
+- `examples/pod_recovery/scenario.json`
+- `examples/pod_eviction/scenario.json`
 - `examples/pod_scaling/scenario.json`
 
 ### HTTP echo with HPA
@@ -430,8 +433,8 @@ the `RunTelemetry` adapter and separated by Fluent Bit based on `type=metric`.
   source tree, Helm values, Dockerfiles, examples, and Makefile.
 - The repository includes a checked-in `.env`; keep real credentials out of git
   and rotate any credential that may have been committed.
-- `examples/pod_kill/REAME.md` appears to be misspelled and may be intended to
-  be `README.md`.
+- `examples/pod_recovery/scenario.json` and `examples/pod_eviction/scenario.json`
+  target the local nginx demo workload.
 - The test files currently reference some legacy helper/logging names. If tests
   fail, compare them against the current implementations in `agent.helper` and
   `agent.logging`.

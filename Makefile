@@ -49,6 +49,8 @@ build: lib ## Build local docker containers
 	@echo "🐳 Building Docker containers"
 	docker build --no-cache -f ./docker/AgentDockerfile --target local -t resilience-agent:local .
 	docker build --no-cache -f ./docker/MockserverDockerfile -t resilience-agent-cp:local .
+	minikube image load resilience-agent:local
+	minikube image load resilience-agent-cp:local
 
 secrets: ## Create/update local agent secret from .env
 	@test -n "$(OAUTH_CLIENT_ID)" || (echo "OAUTH_CLIENT_ID is not set"; exit 1)
@@ -87,6 +89,7 @@ logs-fluentbit: ## Log stream of fluentbit
 nginx-up: ## Deploy nginx with hpa
 	@echo "🐳 Building nginx container"
 	docker build -f ./docker/NginxDockerfile -t resiltyio-nginx:local .
+	minikube image load resiltyio-nginx:local
 	kubectl apply -f ./examples/nginx-hpa.yaml -n nginx
 
 nginx-down: ## Delete nginx deployment

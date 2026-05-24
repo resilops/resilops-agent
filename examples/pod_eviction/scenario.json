@@ -1,0 +1,58 @@
+{
+    "id": 3,
+    "scenario_id": 3,
+    "name": "pod_eviction",
+    "title": "Do we remain available during voluntary pod eviction?",
+    "description": "We expect Kubernetes to respect disruption policy and recover gracefully when a pod is evicted",
+    "template": {
+        "namespace": "nginx",
+        "workload": "nginx-deployment",
+        "quantity": 1,
+        "mode": "absolute",
+        "min_remaining_replicas": 1
+    },
+    "steps": [
+        {
+            "type": "guardrail",
+            "name": "ensure_workload_steady",
+            "params": {}
+        },
+        {
+            "type": "guardrail",
+            "name": "validate_min_remaining_replicas",
+            "params": {}
+        },
+        {
+            "type": "guardrail",
+            "name": "ensure_pdb_not_violated",
+            "params": {}
+        },
+        {
+            "type": "action",
+            "name": "evict_pods",
+            "params": {
+                "timeout_seconds": 200
+            }
+        },
+        {
+            "type": "rollback",
+            "name": "wait_until_pod_respawn",
+            "params": {
+                "timeout_seconds": 300
+            }
+        }
+    ],
+    "observer": {
+        "name": "measure_endpoint_latency",
+        "config": {
+            "sampling_interval_seconds": 4,
+            "warmup_period_seconds": 10,
+            "grace_period_seconds": 10
+        },
+        "params": {
+            "endpoint": "http://nginx-service.nginx.svc.cluster.local:80/",
+            "requests_per_interval": 3,
+            "request_timeout_seconds": 5
+        }
+    }
+}
