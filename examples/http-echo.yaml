@@ -17,6 +17,7 @@ spec:
     metadata:
       labels:
         app: http-echo
+        service.resiltyio/http-echo: "true"
     spec:
       containers:
         - name: http-echo
@@ -54,6 +55,7 @@ metadata:
 spec:
   selector:
     app: http-echo
+    service.resiltyio/http-echo: "true"
   ports:
     - protocol: TCP
       port: 80

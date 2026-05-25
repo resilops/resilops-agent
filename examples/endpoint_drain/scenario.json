@@ -1,12 +1,13 @@
 {
-    "id": 4,
-    "scenario_id": 4,
-    "name": "rolling_restart",
-    "title": "Can the workload complete a rolling restart?",
-    "description": "Restart the workload and verify new pods start with the current image, configuration, secrets, and dependencies while availability is maintained.",
+    "id": 5,
+    "scenario_id": 5,
+    "name": "endpoint_drain",
+    "title": "Can one pod be drained from Service traffic?",
+    "description": "Remove one Ready pod from Service endpoints without restarting or replacing it, and verify traffic continues through the remaining Ready endpoints.",
     "template": {
         "namespace": "nginx",
-        "workload": "nginx-deployment"
+        "workload": "nginx-deployment",
+        "service_name": "nginx-service"
     },
     "steps": [
         {
@@ -16,24 +17,31 @@
         },
         {
             "type": "guardrail",
+            "name": "ensure_hpa_not_at_max_replicas",
+            "params": {}
+        },
+        {
+            "type": "guardrail",
             "name": "ensure_minimum_replicas",
             "params": {}
         },
         {
             "type": "guardrail",
-            "name": "ensure_hpa_not_at_max_replicas",
+            "name": "ensure_pdb_not_violated",
             "params": {}
         },
         {
             "type": "action",
-            "name": "perform_rolling_restart",
-            "params": {}
+            "name": "drain_pod_from_service_endpoints",
+            "params": {
+                "timeout_seconds": 120
+            }
         },
         {
             "type": "rollback",
-            "name": "wait_until_rolling_restart_complete",
+            "name": "restore_pod_to_service_endpoints",
             "params": {
-                "timeout_seconds": 600
+                "timeout_seconds": 120
             }
         }
     ],

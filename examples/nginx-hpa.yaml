@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: nginx
+        service.resiltyio/nginx: "true"
     spec:
       containers:
       - name: nginx
@@ -44,6 +45,7 @@ metadata:
 spec:
   selector:
     app: nginx
+    service.resiltyio/nginx: "true"
   ports:
   - protocol: TCP
     port: 80

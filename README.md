@@ -36,6 +36,7 @@ to run as a long-lived async worker process.
 |   |-- pod_eviction/
 |   |-- pod_recovery/
 |   |-- rolling_restart/
+|   |-- endpoint_drain/
 |   `-- pod_scaling/
 |-- helm/                           Values used with the shared application Helm chart
 |   |-- agent/
@@ -151,8 +152,10 @@ The Helm values define RBAC for the agent.
 For target namespaces, the agent needs access to:
 
 - Pods, including delete operations for pod recovery scenarios.
+- Pod patch operations for endpoint drain scenarios.
 - Pod evictions for voluntary disruption scenarios.
 - Services.
+- EndpointSlices for endpoint drain verification.
 - Pod exec.
 - Events.
 - Deployments.
@@ -354,6 +357,7 @@ image. The related scenario files are:
 - `examples/pod_recovery/scenario.json`
 - `examples/pod_eviction/scenario.json`
 - `examples/rolling_restart/scenario.json`
+- `examples/endpoint_drain/scenario.json`
 - `examples/pod_scaling/scenario.json`
 
 ### HTTP echo with HPA
@@ -436,8 +440,9 @@ the `RunTelemetry` adapter and separated by Fluent Bit based on `type=metric`.
   source tree, Helm values, Dockerfiles, examples, and Makefile.
 - The repository includes a checked-in `.env`; keep real credentials out of git
   and rotate any credential that may have been committed.
-- `examples/pod_recovery/scenario.json` and `examples/pod_eviction/scenario.json`
-  target the local nginx demo workload.
+- `examples/pod_recovery/scenario.json`, `examples/pod_eviction/scenario.json`,
+  `examples/rolling_restart/scenario.json`, and
+  `examples/endpoint_drain/scenario.json` target the local nginx demo workload.
 - The test files currently reference some legacy helper/logging names. If tests
   fail, compare them against the current implementations in `agent.helper` and
   `agent.logging`.
