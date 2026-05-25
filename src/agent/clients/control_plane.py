@@ -6,8 +6,8 @@ from pydantic import UUID4
 from agent.clients.base import BaseAPIClient
 from agent.clients.token import AuthServiceClient
 from agent.constants import (
-    AGENT_CLAIM_ACK_PATH,
-    AGENT_CLAIMS_PATH,
+    AGENT_CLAIM_SET_ACK_PATH,
+    AGENT_CLAIM_SETS_PATH,
     AGENT_CLUSTER_SNAPSHOT,
     AGENT_HEARTBEAT_PATH,
     AGENT_SCENARIO_RUN_PATH,
@@ -16,7 +16,7 @@ from agent.constants import (
 )
 from agent.schemas.config import AgentConfig
 from agent.schemas.heartbeat import HeartbeatRequest, HeartbeatResponse
-from agent.schemas.scenario import ScenarioClaim, ScenarioRun
+from agent.schemas.scenario import ScenarioClaimSet, ScenarioRun
 from agent.schemas.snapshot import ClusterSnapshot
 
 logger = logging.getLogger(__name__)
@@ -62,24 +62,27 @@ class ControlPlaneClient(BaseAPIClient):
         )
         return HeartbeatResponse(**response)
 
-    async def fetch_scenario_claim(self) -> Optional[ScenarioClaim]:
-        """Return the next available scenario claim, if one exists."""
-        logger.debug("Fetching claim from control plane")
-        response = await self.request("GET", AGENT_CLAIMS_PATH)
+    async def fetch_scenario_claim_set(self) -> Optional[ScenarioClaimSet]:
+        """Return the next available scenario claim set, if one exists."""
+        logger.debug("Fetching claim set from control plane")
+        response = await self.request("GET", AGENT_CLAIM_SETS_PATH)
 
-        claim = ScenarioClaim(**response[0]) if response else None
-        if claim and claim.status == ScenarioClaimStatus.pending:
-            return claim
+        claim_set = ScenarioClaimSet(**response[0]) if response else None
+        if claim_set and claim_set.status == ScenarioClaimStatus.pending:
+            return claim_set
 
         return None
 
-    async def ack_scenario_claim(
+    async def ack_scenario_claim_set(
         self,
-        claim_id: UUID4,
+        claim_set_id: UUID4,
     ) -> None:
-        """Acknowledge receipt of a scenario claim."""
-        logger.info("Acknowledging scenario with ID: %d", claim_id)
-        await self.request("POST", AGENT_CLAIM_ACK_PATH.format(claim_id=str(claim_id)))
+        """Acknowledge receipt of a scenario claim set."""
+        logger.info("Acknowledging scenario claim set with ID: %s", claim_set_id)
+        await self.request(
+            "POST",
+            AGENT_CLAIM_SET_ACK_PATH.format(claim_set_id=str(claim_set_id)),
+        )
         return
 
     async def fetch_scenario_run(self, scenario_id: int, run_id: int) -> ScenarioRun:

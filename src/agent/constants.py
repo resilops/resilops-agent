@@ -4,8 +4,8 @@ CLIENT_CREDENTIALS_GRANT_TYPE: str = "client_credentials"
 AUTH_SERVICE_M2M_TOKEN_ISSUE_PATH: str = "/api/v1/m2m/token"
 
 AGENT_HEARTBEAT_PATH = "/api/v1/agent/heartbeat"
-AGENT_CLAIMS_PATH = "/api/v1/agent/scenario-queue/claims"
-AGENT_CLAIM_ACK_PATH = "/api/v1/agent/scenario-claims/{claim_id}/ack"
+AGENT_CLAIM_SETS_PATH = "/api/v1/agent/scenario-queue/claim-sets"
+AGENT_CLAIM_SET_ACK_PATH = "/api/v1/agent/scenario-claim-sets/{claim_set_id}/ack"
 AGENT_SCENARIO_RUN_PATH = "/api/v1/agent/scenarios/{scenario_id}/runs/{run_id}"
 AGENT_CLUSTER_SNAPSHOT: str = "/api/v1/agent/snapshots/cluster"
 
@@ -43,3 +43,10 @@ class ScenarioClaimStatus(str, Enum):
 
     pending = "pending"
     acknowledged = "acknowledged"
+
+
+class ScenarioClaimSetExecutionMode(str, Enum):
+    """Scenario claim set execution mode identifiers."""
+
+    stop_on_failure = "stop_on_failure"
+    continue_on_failure = "continue_on_failure"

@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Optional
 
-from agent.schemas.scenario import ScenarioClaim
+from agent.schemas.scenario import ScenarioClaimSet
 from agent.schemas.state import (
     AgentHealthState,
     AgentState,
@@ -11,15 +11,15 @@ from agent.schemas.state import (
 
 
 class RunnerStateHandler:
-    """Manages lifecycle transitions for a resiliency scenario execution."""
+    """Manages lifecycle transitions for resiliency scenario claim sets."""
 
     def __init__(self, state: RunnerState):
         self._state = state
 
     @property
-    def current_claim(self) -> Optional[ScenarioClaim]:
-        """Return the claim currently assigned to the runner, if any."""
-        return self._state.claim
+    def current_claim_set(self) -> Optional[ScenarioClaimSet]:
+        """Return the claim set currently assigned to the runner, if any."""
+        return self._state.claim_set
 
     @property
     def is_idle(self) -> bool:
@@ -28,27 +28,27 @@ class RunnerStateHandler:
 
     @property
     def is_queued(self) -> bool:
-        """Return whether a claim is queued for execution."""
+        """Return whether a claim set is queued for execution."""
         return self._state.state == RunnerStatus.QUEUED
 
-    def enqueue(self, claim: ScenarioClaim) -> None:
-        """Queue a claim for execution when the runner is idle."""
+    def enqueue(self, claim_set: ScenarioClaimSet) -> None:
+        """Queue a claim set for execution when the runner is idle."""
         if not self.is_idle:
-            raise RuntimeError("Scenario claim execution slot is busy.")
+            raise RuntimeError("Scenario claim set execution slot is busy.")
 
-        self._state.claim = claim
+        self._state.claim_set = claim_set
         self._state.state = RunnerStatus.QUEUED
 
     def mark_running(self) -> None:
         """Transition the runner from queued to running."""
         if not self.is_queued:
-            raise RuntimeError("Cannot start execution: no claim queued.")
+            raise RuntimeError("Cannot start execution: no claim set queued.")
 
         self._state.state = RunnerStatus.RUNNING
 
     def reset_to_idle(self) -> None:
-        """Clear the current claim and reset the runner to idle."""
-        self._state.claim = None
+        """Clear the current claim set and reset the runner to idle."""
+        self._state.claim_set = None
         self._state.state = RunnerStatus.IDLE
 
 

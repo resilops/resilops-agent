@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from agent.schemas.scenario import ScenarioClaim
+from agent.schemas.scenario import ScenarioClaimSet
 
 
 class AgentHealthState(str, Enum):
@@ -27,10 +27,10 @@ class RunnerState(BaseModel):
     """
     In-memory runtime state of resiliency scenario processing.
 
-    Tracks the currently assigned scenario and its lifecycle state.
+    Tracks the currently assigned claim set and its lifecycle state.
     """
 
-    claim: Optional[ScenarioClaim] = None
+    claim_set: Optional[ScenarioClaimSet] = None
     state: RunnerStatus = RunnerStatus.IDLE
 
 

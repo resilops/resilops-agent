@@ -86,10 +86,13 @@ logs-fluentbit: ## Log stream of fluentbit
 	kubectl logs -f $$(kubectl get pod -n $(NAMESPACE) -l app.kubernetes.io/name=$(AGENT_RELEASE) -o jsonpath='{.items[0].metadata.name}') -c fluent-bit-sidecar -n $(NAMESPACE)
 
 
-nginx-up: ## Deploy nginx with hpa
+nginx-build: ## Build nginx with hpa
 	@echo "🐳 Building nginx container"
 	docker build -f ./docker/NginxDockerfile -t resiltyio-nginx:local .
 	minikube image load resiltyio-nginx:local
+
+nginx-up: ## Deploy nginx with hpa
+	@echo "🐳 Deploying nginx container"
 	kubectl apply -f ./examples/nginx-hpa.yaml -n nginx
 
 nginx-down: ## Delete nginx deployment
