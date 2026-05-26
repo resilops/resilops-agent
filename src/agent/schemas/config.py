@@ -24,17 +24,17 @@ _APP_VERSION = _get_app_version()
 
 
 class AgentConfig(BaseSettings):
-    """Runtime configuration loaded from `RESILTY_AGENT_` environment variables."""
+    """Runtime configuration loaded from `RESILOPS_AGENT_` environment variables."""
 
-    model_config = SettingsConfigDict(env_prefix="RESILTY_AGENT_")
+    model_config = SettingsConfigDict(env_prefix="RESILOPS_AGENT_")
 
-    # Resilty Token service
+    # ResilOps Token service
     auth_service_host: str = Field(..., description="Base URL for the auth service API")
     auth_service_client_id: SecretStr = Field(
-        ..., description="Resilty token issuer client ID"
+        ..., description="ResilOps token issuer client ID"
     )
     auth_service_client_secret: SecretStr = Field(
-        ..., description="Resilty token issuer client secret"
+        ..., description="ResilOps token issuer client secret"
     )
 
     # Control plane hosts
@@ -83,14 +83,14 @@ class AgentConfig(BaseSettings):
         """Parse a comma-separated namespace list from the environment."""
         if not isinstance(value, str):
             raise ConfigError(
-                "RESILTY_AGENT_TARGET_NAMESPACES must be a comma-separated string"
+                "RESILOPS_AGENT_TARGET_NAMESPACES must be a comma-separated string"
             )
 
         namespaces = [ns.strip() for ns in value.split(",") if ns.strip()]
 
         if not namespaces:
             raise ConfigError(
-                "RESILTY_AGENT_TARGET_NAMESPACES must contain at least one namespace"
+                "RESILOPS_AGENT_TARGET_NAMESPACES must contain at least one namespace"
             )
 
         return namespaces

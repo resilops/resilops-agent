@@ -47,17 +47,17 @@ envVar:
     LOG_LEVEL: INFO
     LOG_MAX_MB: "50"
     LOG_BACKUP_COUNT: "5"
-    RESILTY_AGENT_CONTROL_PLANE_API_HOST: https://controlplane.resilty.io
-    RESILTY_AGENT_AUTH_SERVICE_HOST: https://auth.resilty.io
-    RESILTY_AGENT_TARGET_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
-    RESILTY_AGENT_NAMESPACE: '{{ .Release.Namespace }}'
+    RESILOPS_AGENT_CONTROL_PLANE_API_HOST: https://controlplane.resilopshq.com
+    RESILOPS_AGENT_AUTH_SERVICE_HOST: https://auth.resilopshq.com
+    RESILOPS_AGENT_TARGET_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
+    RESILOPS_AGENT_NAMESPACE: '{{ .Release.Namespace }}'
 
 existingSecret:
-  name: resilty-agent-secrets
+  name: resilops-agent-secrets
   app:
-    - envName: RESILTY_AGENT_AUTH_SERVICE_CLIENT_ID
+    - envName: RESILOPS_AGENT_AUTH_SERVICE_CLIENT_ID
       secretKey: OAUTH_CLIENT_ID
-    - envName: RESILTY_AGENT_AUTH_SERVICE_CLIENT_SECRET
+    - envName: RESILOPS_AGENT_AUTH_SERVICE_CLIENT_SECRET
       secretKey: OAUTH_CLIENT_SECRET
 
 file_config:
@@ -93,7 +93,7 @@ file_config:
             Name              tail
             Path              /var/log/agent/agent.log*
             Parser            json
-            Tag               resilty.agent
+            Tag               resilops.agent
             Refresh_Interval  5
             Skip_Long_Lines   On
             Mem_Buf_Limit     10MB
@@ -103,18 +103,18 @@ file_config:
       filter.conf: |
         [FILTER]
             Name          rewrite_tag
-            Match         resilty.agent
-            Rule          $type ^event$ resilty.agent.events true
+            Match         resilops.agent
+            Rule          $type ^event$ resilops.agent.events true
 
         [FILTER]
             Name          rewrite_tag
-            Match         resilty.agent
-            Rule          $type ^metric$ resilty.agent.metrics true
+            Match         resilops.agent
+            Rule          $type ^metric$ resilops.agent.metrics true
 
       output.conf: |
         [OUTPUT]
             Name                   http
-            Match                  resilty.agent.events
+            Match                  resilops.agent.events
             Host                   ${FLUENTBIT_REMOTE_HOST}
             Port                   ${FLUENTBIT_REMOTE_PORT}
             URI                    /api/v1/agent/events
@@ -130,7 +130,7 @@ file_config:
 
         [OUTPUT]
             Name                   http
-            Match                  resilty.agent.metrics
+            Match                  resilops.agent.metrics
             Host                   ${FLUENTBIT_REMOTE_HOST}
             Port                   ${FLUENTBIT_REMOTE_PORT}
             URI                    /api/v1/agent/metrics
@@ -150,7 +150,7 @@ migration:
 rbac:
   enabled: true
   namespaced:
-    roleName: resiltyio-rbac-ns
+    roleName: resilops-rbac-ns
     namespaces: []
     rules:
       - apiGroups: [""]
@@ -184,12 +184,12 @@ rbac:
         resources: ["pods"]
         verbs: ["get", "list"]
   cluster:
-    roleName: resiltyio-rbac-cluster
+    roleName: resilops-rbac-cluster
     rules:
       - nonResourceURLs: ["/version"]
         verbs: ["get"]
   current:
-    roleName: resiltyio-agent-rbac
+    roleName: resilops-agent-rbac
     rules:
       - apiGroups: ["coordination.k8s.io"]
         resources: ["leases"]
@@ -219,17 +219,17 @@ sidecar:
     tag: "5.0"
   env:
     - name: FLUENTBIT_REMOTE_HOST
-      value: controlplane.resilty.io
+      value: controlplane.resilopshq.com
     - name: FLUENTBIT_REMOTE_PORT
       value: "443"
     - name: FLUENTBIT_REMOTE_TLS
       value: "On"
     - name: FLUENTBIT_OAUTH_TOKEN_URL
-      value: "https://controlplane.resilty.io/api/v1/m2m/token"
+      value: "https://controlplane.resilopshq.com/api/v1/m2m/token"
     - name: FLUENTBIT_OAUTH_SCOPES
       value: "res:oauth:scope:events:create res:oauth:scope:metrics:create"
   existingSecret:
-    name: resilty-agent-secrets
+    name: resilops-agent-secrets
     data:
       - envName: FLUENTBIT_OAUTH_CLIENT_ID
         secretKey: OAUTH_CLIENT_ID

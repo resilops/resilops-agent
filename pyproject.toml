@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "resilience-agent"
 version = "1.0.0"
-description = "resilty.io agent for validating Kubernetes resiliency and SLA criteria."
+description = "resilopshq.com agent for validating Kubernetes resiliency and SLA criteria."
 authors = ["Swaroop Shubhakrishna Bhat <swaroopbhatk@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
@@ -78,6 +78,6 @@ show_missing = true
 skip_covered = true
 
 [tool.poetry.urls]
-homepage = "https://github.com/resiltyio/resilience-agent"
-documentation = "https://github.com/resiltyio/resilience-agent/tree/main/docs"
-bug-tracker = "https://github.com/resiltyio/resilience-agent/issues"
+homepage = "https://github.com/resilops/resilience-agent"
+documentation = "https://github.com/resilops/resilience-agent/tree/main/docs"
+bug-tracker = "https://github.com/resilops/resilience-agent/issues"

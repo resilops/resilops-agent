@@ -12,11 +12,11 @@ spec:
     metadata:
       labels:
         app: nginx
-        service.resiltyio/nginx: "true"
+        service.resilops/nginx: "true"
     spec:
       containers:
       - name: nginx
-        image: resiltyio-nginx:local
+        image: resilops-nginx:local
         ports:
         - containerPort: 80
         livenessProbe:
@@ -45,7 +45,7 @@ metadata:
 spec:
   selector:
     app: nginx
-    service.resiltyio/nginx: "true"
+    service.resilops/nginx: "true"
   ports:
   - protocol: TCP
     port: 80

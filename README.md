@@ -1,8 +1,8 @@
 # Resilience Agent
 
-`resilience-agent` is the Kubernetes-side runtime for Resilty.io resiliency
+`resilience-agent` is the Kubernetes-side runtime for resilopshq.com resiliency
 validation. It runs inside or against a Kubernetes cluster, reports agent
-health to the Resilty control plane, discovers namespace state, claims queued
+health to the ResilOps control plane, discovers namespace state, claims queued
 resiliency scenarios, executes them through `resilience-lib`, and emits
 structured event and metric telemetry.
 
@@ -62,7 +62,7 @@ The entry point is `agent.entrypoint:run`.
 At startup the agent:
 
 1. Configures JSON logging.
-2. Loads `AgentConfig` from `RESILTY_AGENT_` environment variables.
+2. Loads `AgentConfig` from `RESILOPS_AGENT_` environment variables.
 3. Builds an authenticated `ControlPlaneClient`.
 4. Creates shared in-memory agent state.
 5. Creates a Kubernetes lease-based leader election helper.
@@ -84,23 +84,23 @@ The snapshot worker retries quickly during startup: up to five attempts at a
 ## Configuration
 
 Runtime settings are loaded with `pydantic-settings` from environment variables
-prefixed with `RESILTY_AGENT_`.
+prefixed with `RESILOPS_AGENT_`.
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `RESILTY_AGENT_AUTH_SERVICE_HOST` | Yes | None | Base URL for the OAuth/M2M token service. |
-| `RESILTY_AGENT_AUTH_SERVICE_CLIENT_ID` | Yes | None | OAuth client ID used by the agent. |
-| `RESILTY_AGENT_AUTH_SERVICE_CLIENT_SECRET` | Yes | None | OAuth client secret used by the agent. |
-| `RESILTY_AGENT_CONTROL_PLANE_API_HOST` | Yes | None | Base URL for the Resilty control plane API. |
-| `RESILTY_AGENT_NAMESPACE` | Yes | None | Namespace where the agent runs and stores its leader-election lease. |
-| `RESILTY_AGENT_TARGET_NAMESPACES` | Yes | None | Comma-separated list of Kubernetes namespaces the agent may discover and operate against. |
-| `RESILTY_AGENT_CONFIG_VERSION` | Yes | None | Control-plane supplied configuration version or hash. |
-| `RESILTY_AGENT_HEARTBEAT_INTERVAL` | No | `30` | Seconds between heartbeat attempts. Minimum: `30`. |
-| `RESILTY_AGENT_RUNNER_INTERVAL` | No | `5` | Seconds between local runner queue checks. Minimum: `5`. |
-| `RESILTY_AGENT_RESILIENCY_SCENARIO_POLL_INTERVAL` | No | `60` | Seconds between control-plane claim polling attempts. Minimum: `60`. |
-| `RESILTY_AGENT_NAMESPACE_SNAPSHOT_INTERVAL` | No | `10800` | Seconds between namespace snapshots after startup. Minimum: `10800`. |
+| `RESILOPS_AGENT_AUTH_SERVICE_HOST` | Yes | None | Base URL for the OAuth/M2M token service. |
+| `RESILOPS_AGENT_AUTH_SERVICE_CLIENT_ID` | Yes | None | OAuth client ID used by the agent. |
+| `RESILOPS_AGENT_AUTH_SERVICE_CLIENT_SECRET` | Yes | None | OAuth client secret used by the agent. |
+| `RESILOPS_AGENT_CONTROL_PLANE_API_HOST` | Yes | None | Base URL for the ResilOps control plane API. |
+| `RESILOPS_AGENT_NAMESPACE` | Yes | None | Namespace where the agent runs and stores its leader-election lease. |
+| `RESILOPS_AGENT_TARGET_NAMESPACES` | Yes | None | Comma-separated list of Kubernetes namespaces the agent may discover and operate against. |
+| `RESILOPS_AGENT_CONFIG_VERSION` | Yes | None | Control-plane supplied configuration version or hash. |
+| `RESILOPS_AGENT_HEARTBEAT_INTERVAL` | No | `30` | Seconds between heartbeat attempts. Minimum: `30`. |
+| `RESILOPS_AGENT_RUNNER_INTERVAL` | No | `5` | Seconds between local runner queue checks. Minimum: `5`. |
+| `RESILOPS_AGENT_RESILIENCY_SCENARIO_POLL_INTERVAL` | No | `60` | Seconds between control-plane claim polling attempts. Minimum: `60`. |
+| `RESILOPS_AGENT_NAMESPACE_SNAPSHOT_INTERVAL` | No | `10800` | Seconds between namespace snapshots after startup. Minimum: `10800`. |
 
-Logging settings are read without the `RESILTY_AGENT_` prefix:
+Logging settings are read without the `RESILOPS_AGENT_` prefix:
 
 | Variable | Default | Description |
 | --- | --- | --- |
@@ -220,13 +220,13 @@ pre-commit run --all-files
 Set the required environment variables and run the console script:
 
 ```bash
-export RESILTY_AGENT_AUTH_SERVICE_HOST=http://localhost:8000
-export RESILTY_AGENT_AUTH_SERVICE_CLIENT_ID=local-client
-export RESILTY_AGENT_AUTH_SERVICE_CLIENT_SECRET=local-secret
-export RESILTY_AGENT_CONTROL_PLANE_API_HOST=http://localhost:8000
-export RESILTY_AGENT_NAMESPACE=resiltyio
-export RESILTY_AGENT_TARGET_NAMESPACES=nginx,http-echo
-export RESILTY_AGENT_CONFIG_VERSION=local
+export RESILOPS_AGENT_AUTH_SERVICE_HOST=http://localhost:8000
+export RESILOPS_AGENT_AUTH_SERVICE_CLIENT_ID=local-client
+export RESILOPS_AGENT_AUTH_SERVICE_CLIENT_SECRET=local-secret
+export RESILOPS_AGENT_CONTROL_PLANE_API_HOST=http://localhost:8000
+export RESILOPS_AGENT_NAMESPACE=resilops
+export RESILOPS_AGENT_TARGET_NAMESPACES=nginx,http-echo
+export RESILOPS_AGENT_CONFIG_VERSION=local
 export LOG_FILE=./agent.log
 
 poetry run resilience-agent
@@ -331,7 +331,7 @@ Remove the local releases:
 make down
 ```
 
-The default local settings deploy into the `resiltyio` namespace, use
+The default local settings deploy into the `resilops` namespace, use
 `resilience-agent:local` and `resilience-agent-cp:local`, and target the
 `nginx` and `http-echo` namespaces.
 
@@ -351,7 +351,7 @@ Delete:
 make nginx-down
 ```
 
-This uses `examples/nginx-hpa.yaml` and the local `resiltyio-nginx:local`
+This uses `examples/nginx-hpa.yaml` and the local `resilops-nginx:local`
 image. The related scenario files are:
 
 - `examples/pod_recovery/scenario.json`

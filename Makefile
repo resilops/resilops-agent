@@ -6,13 +6,13 @@ include .env
 export
 endif
 
-NAMESPACE ?= resiltyio
+NAMESPACE ?= resilops
 APP_CHART ?= ../helm-charts/app
 AGENT_RELEASE ?= agent
 CONTROL_RELEASE ?= controlplane
 AGENT_CONFIG_VERSION ?= OC551dpOH70
 RBAC_NAMESPACES ?= nginx,http-echo
-SECRETS_NAME ?= resilty-agent-secrets
+SECRETS_NAME ?= resilops-agent-secrets
 
 AGENT_COMMON_VALUES := ./helm/agent/common.yaml
 AGENT_LOCAL_VALUES := ./helm/agent/local/values.yaml
@@ -21,7 +21,7 @@ CONTROL_LOCAL_VALUES := ./helm/controlplane/local/values.yaml
 HELM_AGENT_ARGS := \
 	-f $(AGENT_COMMON_VALUES) \
 	-f $(AGENT_LOCAL_VALUES) \
-	--set-string 'envVar.data.RESILTY_AGENT_CONFIG_VERSION=$(AGENT_CONFIG_VERSION)' \
+	--set-string 'envVar.data.RESILOPS_AGENT_CONFIG_VERSION=$(AGENT_CONFIG_VERSION)' \
 	--set 'rbac.namespaced.namespaces={$(RBAC_NAMESPACES)}'
 
 HELM_CONTROL_ARGS := \
@@ -88,8 +88,8 @@ logs-fluentbit: ## Log stream of fluentbit
 
 nginx-build: ## Build nginx with hpa
 	@echo "🐳 Building nginx container"
-	docker build -f ./docker/NginxDockerfile -t resiltyio-nginx:local .
-	minikube image load resiltyio-nginx:local
+	docker build -f ./docker/NginxDockerfile -t resilops-nginx:local .
+	minikube image load resilops-nginx:local
 
 nginx-up: ## Deploy nginx with hpa
 	@echo "🐳 Deploying nginx container"

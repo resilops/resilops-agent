@@ -1758,7 +1758,7 @@ rsa = ["oauthlib[signedtoken] (>=3.0.0)"]
 [[package]]
 name = "resilience-lib"
 version = "1.0.0"
-description = "resilty.io lib, that is responsible for running the resilience tests"
+description = "resilopshq.com lib, that is responsible for running the resilience tests"
 optional = false
 python-versions = "^3.12"
 groups = ["local"]

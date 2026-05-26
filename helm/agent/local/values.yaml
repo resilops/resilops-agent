@@ -8,8 +8,8 @@ envVar:
   enabled: true
   data:
     ENV: local
-    RESILTY_AGENT_CONTROL_PLANE_API_HOST: http://host.minikube.internal:9000
-    RESILTY_AGENT_AUTH_SERVICE_HOST: http://host.minikube.internal:8000
+    RESILOPS_AGENT_CONTROL_PLANE_API_HOST: http://host.minikube.internal:9000
+    RESILOPS_AGENT_AUTH_SERVICE_HOST: http://host.minikube.internal:8000
 
 
 sidecar:
