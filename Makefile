@@ -10,7 +10,7 @@ NAMESPACE ?= resilops
 APP_CHART ?= ../helm-charts/app
 AGENT_RELEASE ?= agent
 CONTROL_RELEASE ?= controlplane
-AGENT_CONFIG_VERSION ?= OC551dpOH70
+AGENT_CONFIG_VERSION ?= rf2nCIa95IY
 RBAC_NAMESPACES ?= nginx,http-echo
 SECRETS_NAME ?= resilops-agent-secrets
 

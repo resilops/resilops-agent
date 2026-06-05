@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any, Dict, Optional
 
 from reslib.runtime.scenario import execute_resilience_scenario
@@ -67,3 +68,5 @@ class ScenarioRunner:
                 ):
                     setattr(exc, "result", result)
                     raise
+
+            time.sleep(3)  # Time between runs
