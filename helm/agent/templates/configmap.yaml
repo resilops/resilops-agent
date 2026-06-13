@@ -1,0 +1,11 @@
+{{- if .Values.envVar.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "resilienceAgent.name" . }}-configmap
+  namespace: {{ .Release.Namespace }}
+data:
+  {{- range $key, $value := .Values.envVar.data }}
+  {{ $key }}: {{ tpl ($value | toString) $ | quote }}
+  {{- end }}
+{{- end -}}

@@ -1,14 +1,21 @@
-kubectl patch deployment nginx-deployment -n nginx -p '{
-  "spec": {
-    "template": {
-      "spec": {
-        "containers": [{
-          "name": "nginx",
-          "command": ["sh", "-c", "if [ \"$CRASH_ON_START\" = \"true\" ]; then exit 1; fi; nginx -g \"daemon off;\""]
-        }]
-      }
-    }
-  }
-}'
+Copyright (c) 2026 ResilOps. All rights reserved.
 
-kubectl set env deployment/nginx-deployment CRASH_ON_START=true -n nginx
+The Software, including all associated source code, container images, Helm charts, deployment artifacts, documentation, and related materials (collectively, the "Software"), is proprietary to ResilOps.
+
+Subject to a valid Free, Pro, Enterprise, trial, or other authorization issued by ResilOps, ResilOps grants the customer a limited, non-exclusive, non-transferable, non-sublicensable license to install and use the Software solely for the customer's internal business purposes and in accordance with the applicable subscription, plan, or agreement.
+
+Except as expressly permitted by ResilOps in writing, the customer may not:
+
+* Copy, modify, adapt, create derivative works from, distribute, or otherwise make the Software available to any third party, except as necessary for permitted internal use.
+* Sell, sublicense, rent, lease, assign, transfer, or commercially exploit the Software.
+* Use the Software to provide a competing commercial product or service.
+* Remove or alter any copyright notice, trademark, or other proprietary marking.
+* Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Software, except to the extent such restriction is prohibited by applicable law.
+
+Access to source code, repositories, container registries, Helm charts, container images, or other deployment artifacts does not grant any ownership interest in the Software or any intellectual property rights in the Software.
+
+The Software may include technical measures, authentication mechanisms, license keys, enrollment tokens, or service-side controls that restrict or enable functionality based on the customer's subscription, plan, or authorization status. Circumventing or attempting to circumvent such controls is prohibited.
+
+All rights not expressly granted are reserved by ResilOps.
+
+For commercial licensing, support, or enterprise distribution terms, contact ResilOps.

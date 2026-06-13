@@ -7,20 +7,19 @@ export
 endif
 
 NAMESPACE ?= resilops
-APP_CHART ?= ../helm-charts/app
+AGENT_CHART ?= ./helm/agent
+CONTROL_CHART ?= ../helm-charts/app
 AGENT_RELEASE ?= agent
 CONTROL_RELEASE ?= controlplane
 AGENT_CONFIG_VERSION ?= rf2nCIa95IY
 RBAC_NAMESPACES ?= nginx,http-echo
 SECRETS_NAME ?= resilops-agent-secrets
 
-AGENT_COMMON_VALUES := ./helm/agent/common.yaml
-AGENT_LOCAL_VALUES := ./helm/agent/local/values.yaml
 CONTROL_LOCAL_VALUES := ./helm/controlplane/local/values.yaml
 
 HELM_AGENT_ARGS := \
-	-f $(AGENT_COMMON_VALUES) \
-	-f $(AGENT_LOCAL_VALUES) \
+	--set 'region.name=local' \
+	--set-string 'image.tag=local' \
 	--set-string 'envVar.data.RESILOPS_AGENT_CONFIG_VERSION=$(AGENT_CONFIG_VERSION)' \
 	--set 'rbac.namespaced.namespaces={$(RBAC_NAMESPACES)}'
 
@@ -36,11 +35,11 @@ lib: ## Install resilience-lib
 	@rsync -av --exclude='pyenv' ../resilience-lib/ ./local-libs/resilience-lib
 
 chart: ## Build local kubernetes charts
-	helm template $(AGENT_RELEASE) $(APP_CHART) \
+	helm template $(AGENT_RELEASE) $(AGENT_CHART) \
 		-n $(NAMESPACE) \
 		$(HELM_AGENT_ARGS)
 
-	helm template $(CONTROL_RELEASE) $(APP_CHART) \
+	helm template $(CONTROL_RELEASE) $(CONTROL_CHART) \
 		-n $(NAMESPACE) \
 		$(HELM_CONTROL_ARGS)
 
@@ -62,13 +61,13 @@ secrets: ## Create/update local agent secret from .env
 
 up: ## Deploy local charts
 	@echo "🚀 Deploying Resilience Agent Control Plane Locally"
-	helm upgrade --install $(CONTROL_RELEASE) $(APP_CHART) \
+	helm upgrade --install $(CONTROL_RELEASE) $(CONTROL_CHART) \
 		-n $(NAMESPACE) \
 		$(HELM_CONTROL_ARGS) \
 		--create-namespace --force
 
 	@echo "🚀 Deploying Resilience Agent Locally"
-	helm upgrade --install $(AGENT_RELEASE) $(APP_CHART) \
+	helm upgrade --install $(AGENT_RELEASE) $(AGENT_CHART) \
 		-n $(NAMESPACE) \
 		$(HELM_AGENT_ARGS) \
 		--force

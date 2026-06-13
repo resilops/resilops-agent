@@ -1,0 +1,22 @@
+{{- $fileConfig := .Values.file_config | default dict }}
+{{- if ($fileConfig.enabled | default false) }}
+{{- $root := . }}
+{{- range $configName, $configSpec := $fileConfig }}
+{{- if and (ne $configName "enabled") (kindIs "map" $configSpec) }}
+{{- $configData := ($configSpec.data | default dict) }}
+{{- if gt (len $configData) 0 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "resilienceAgent.name" $root }}-{{ $configName }}-fileconfig
+  namespace: {{ $root.Release.Namespace }}
+data:
+  {{- range $filename, $content := $configData }}
+  {{ $filename }}: |
+{{ tpl ($content | toString) $root | indent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

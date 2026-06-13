@@ -1,56 +1,106 @@
+replicaCount: 2
+
+image:
+  repository: resilience-agent
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+
 nameOverride: agent
-fullnameOverride: "Resilience Agent"
+fullnameOverride: ""
 
 workload:
   type: deployment
 
-replicaCount: 2
-
 autoscaling:
   enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 serviceAccount:
   create: true
+  automount: true
+  annotations: {}
   name: agent-sa
 
-image:
-  repository: resilience-agent
-  tag: ""
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+securityContext: {}
 
 service:
   enabled: false
+  type: ClusterIP
+  port: 80
 
 ingress:
   enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  tls: []
 
 livenessProbe:
   exec:
     command:
-      - "sh"
-      - "-c"
-      - "pgrep -f 'resilience-agent' || exit 1"
+      - sh
+      - -c
+      - pgrep -f 'resilience-agent' || exit 1
   initialDelaySeconds: 10
   periodSeconds: 10
 
 readinessProbe:
   exec:
     command:
-      - "sh"
-      - "-c"
-      - "pgrep -f 'resilience-agent' || exit 1"
+      - sh
+      - -c
+      - pgrep -f 'resilience-agent' || exit 1
   initialDelaySeconds: 10
   periodSeconds: 10
 
+resources: {}
+
+region:
+  name: us
+  endpoints:
+    us:
+      env: us
+      controlPlaneApiHost: https://runtime.resilopshq.com
+      authServiceHost: https://auth.resilopshq.com
+      fluentBitRemoteHost: runtime.resilopshq.com
+      fluentBitRemotePort: "443"
+      fluentBitRemoteTls: "On"
+    eu:
+      env: eu
+      controlPlaneApiHost: https://runtime.resilopshq.eu
+      authServiceHost: https://auth.resilopshq.eu
+      fluentBitRemoteHost: runtime.resilopshq.eu
+      fluentBitRemotePort: "443"
+      fluentBitRemoteTls: "On"
+    local:
+      env: local
+      controlPlaneApiHost: http://host.minikube.internal:9000
+      authServiceHost: http://host.minikube.internal:8000
+      fluentBitRemoteHost: host.minikube.internal
+      fluentBitRemotePort: "9000"
+      fluentBitRemoteTls: "Off"
+
 envVar:
+  enabled: true
   data:
-    ENV: production
+    ENV: '{{ (index .Values.region.endpoints .Values.region.name).env }}'
     LOG_LEVEL: INFO
     LOG_MAX_MB: "50"
     LOG_BACKUP_COUNT: "5"
-    RESILOPS_AGENT_CONTROL_PLANE_API_HOST: https://controlplane.resilopshq.com
-    RESILOPS_AGENT_AUTH_SERVICE_HOST: https://auth.resilopshq.com
+    RESILOPS_AGENT_CONTROL_PLANE_API_HOST: '{{ (index .Values.region.endpoints .Values.region.name).controlPlaneApiHost }}'
+    RESILOPS_AGENT_AUTH_SERVICE_HOST: '{{ (index .Values.region.endpoints .Values.region.name).authServiceHost }}'
     RESILOPS_AGENT_TARGET_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
     RESILOPS_AGENT_NAMESPACE: '{{ .Release.Namespace }}'
+
+secrets: {}
 
 existingSecret:
   name: resilops-agent-secrets
@@ -62,6 +112,8 @@ existingSecret:
 
 file_config:
   enabled: true
+  app:
+    data: {}
   sidecar:
     data:
       fluent-bit.conf: |
@@ -146,6 +198,8 @@ file_config:
 
 migration:
   enabled: false
+  hook: false
+  command: []
 
 rbac:
   enabled: true
@@ -203,10 +257,8 @@ volumes:
   - name: agent-logs
     emptyDir:
       sizeLimit: 500Mi
-
   - name: fluentbit-state
     emptyDir: {}
-
   - name: fluentbit-fileconfig
     configMap:
       name: agent-sidecar-fileconfig
@@ -217,15 +269,16 @@ sidecar:
   image:
     repository: fluent/fluent-bit
     tag: "5.0"
+    pullPolicy: IfNotPresent
   env:
     - name: FLUENTBIT_REMOTE_HOST
-      value: controlplane.resilopshq.com
+      value: '{{ (index .Values.region.endpoints .Values.region.name).fluentBitRemoteHost }}'
     - name: FLUENTBIT_REMOTE_PORT
-      value: "443"
+      value: '{{ (index .Values.region.endpoints .Values.region.name).fluentBitRemotePort }}'
     - name: FLUENTBIT_REMOTE_TLS
-      value: "On"
+      value: '{{ (index .Values.region.endpoints .Values.region.name).fluentBitRemoteTls }}'
     - name: FLUENTBIT_OAUTH_TOKEN_URL
-      value: "https://controlplane.resilopshq.com/api/v1/m2m/token"
+      value: '{{ (index .Values.region.endpoints .Values.region.name).authServiceHost }}/api/v1/m2m/token'
     - name: FLUENTBIT_OAUTH_SCOPES
       value: "res:oauth:scope:events:create res:oauth:scope:metrics:create"
   existingSecret:
@@ -242,12 +295,10 @@ sidecar:
     limits:
       cpu: 200m
       memory: 128Mi
-
   command:
     - /fluent-bit/bin/fluent-bit
     - -c
     - /fluent-bit/etc/fluent-bit.conf
-
   volumeMounts:
     - name: fluentbit-fileconfig
       mountPath: /fluent-bit/etc
@@ -259,6 +310,10 @@ sidecar:
       mountPath: /fluent-bit/state
 
 containerCommand:
-  - "poetry"
-  - "run"
-  - "resilience-agent"
+  - poetry
+  - run
+  - resilience-agent
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

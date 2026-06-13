@@ -176,7 +176,8 @@ leader election.
 - Docker.
 - Kubernetes tooling for deployment workflows: `kubectl`, `helm`, and
   optionally `minikube`.
-- Access to the shared Helm app chart expected by the Makefile at
+- The repo-local agent Helm chart at `./helm/agent`.
+- Access to the shared local control-plane chart expected by the Makefile at
   `../helm-charts/app`.
 - A local or vendored `resilience-lib` checkout. The Makefile copies it from
   `../resilience-lib` into `./local-libs/resilience-lib`.
@@ -280,7 +281,13 @@ and installs with the `local` dependency group.
 
 ## Helm and Kubernetes workflow
 
-The Makefile expects a reusable app chart at `../helm-charts/app`.
+The Makefile uses the repo-local agent chart at `./helm/agent`.
+Publishable defaults and region-specific endpoint mappings live in
+`./helm/agent/values.yaml`.
+For local agent workflows, the Makefile sets `region.name=local` and
+`image.tag=local`.
+For local mock control-plane deployment it still expects the shared app chart at
+`../helm-charts/app`.
 
 Render the agent and local control-plane charts:
 

@@ -1,0 +1,18 @@
+{{- if (.Values.service.enabled | default false) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "resilienceAgent.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "resilienceAgent.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+  selector:
+    {{- include "resilienceAgent.selectorLabels" . | nindent 4 }}
+{{- end }}
