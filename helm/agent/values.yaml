@@ -10,16 +10,6 @@ imagePullSecrets: []
 nameOverride: agent
 fullnameOverride: ""
 
-workload:
-  type: deployment
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
-  targetMemoryUtilizationPercentage: 80
-
 serviceAccount:
   create: true
   automount: true
@@ -30,18 +20,6 @@ podAnnotations: {}
 podLabels: {}
 podSecurityContext: {}
 securityContext: {}
-
-service:
-  enabled: false
-  type: ClusterIP
-  port: 80
-
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts: []
-  tls: []
 
 livenessProbe:
   exec:
@@ -99,8 +77,6 @@ envVar:
     RESILOPS_AGENT_AUTH_SERVICE_HOST: '{{ (index .Values.region.endpoints .Values.region.name).authServiceHost }}'
     RESILOPS_AGENT_TARGET_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
     RESILOPS_AGENT_NAMESPACE: '{{ .Release.Namespace }}'
-
-secrets: {}
 
 existingSecret:
   name: resilops-agent-secrets
@@ -195,11 +171,6 @@ file_config:
             oauth2.client_secret   ${FLUENTBIT_OAUTH_CLIENT_SECRET}
             oauth2.auth_method     basic
             oauth2.scope           ${FLUENTBIT_OAUTH_SCOPES}
-
-migration:
-  enabled: false
-  hook: false
-  command: []
 
 rbac:
   enabled: true

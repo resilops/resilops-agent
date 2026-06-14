@@ -1,6 +1,6 @@
 apiVersion: v2
-name: agent
-description: Helm chart for deploying the ResilOps resilience agent
+name: resilience-agent
+description: Resilience Agent
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

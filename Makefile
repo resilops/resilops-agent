@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help lib chart build secrets up down forward logs nginx-up nginx-down http-up http-down
+.PHONY: help lib chart build secrets up down forward logs examples-up examples-down
 
 ifneq (,$(wildcard .env))
 include .env
@@ -8,23 +8,16 @@ endif
 
 NAMESPACE ?= resilops
 AGENT_CHART ?= ./helm/agent
-CONTROL_CHART ?= ../helm-charts/app
 AGENT_RELEASE ?= agent
-CONTROL_RELEASE ?= controlplane
 AGENT_CONFIG_VERSION ?= rf2nCIa95IY
 RBAC_NAMESPACES ?= nginx,http-echo
 SECRETS_NAME ?= resilops-agent-secrets
-
-CONTROL_LOCAL_VALUES := ./helm/controlplane/local/values.yaml
 
 HELM_AGENT_ARGS := \
 	--set 'region.name=local' \
 	--set-string 'image.tag=local' \
 	--set-string 'envVar.data.RESILOPS_AGENT_CONFIG_VERSION=$(AGENT_CONFIG_VERSION)' \
 	--set 'rbac.namespaced.namespaces={$(RBAC_NAMESPACES)}'
-
-HELM_CONTROL_ARGS := \
-	-f $(CONTROL_LOCAL_VALUES)
 
 ## Show help for all commands
 help:
@@ -39,15 +32,11 @@ chart: ## Build local kubernetes charts
 		-n $(NAMESPACE) \
 		$(HELM_AGENT_ARGS)
 
-	helm template $(CONTROL_RELEASE) $(CONTROL_CHART) \
-		-n $(NAMESPACE) \
-		$(HELM_CONTROL_ARGS)
-
-build: lib ## Build local docker containers
+build: lib ## Build local agent and mock control plane images for Minikube
 	@eval $(minikube docker-env)
-	@echo "🐳 Building Docker containers"
-	docker build --no-cache -f ./docker/AgentDockerfile --target local -t resilience-agent:local .
-	docker build --no-cache -f ./docker/MockserverDockerfile -t resilience-agent-cp:local .
+	@echo "🐳 Building local images"
+	docker build --no-cache -f ./docker/agent.Dockerfile --target local -t resilience-agent:local .
+	docker build --no-cache -f ./docker/mockserver.Dockerfile -t resilience-agent-cp:local .
 	minikube image load resilience-agent:local
 	minikube image load resilience-agent-cp:local
 
@@ -59,46 +48,34 @@ secrets: ## Create/update local agent secret from .env
 		--from-literal=OAUTH_CLIENT_SECRET="$(OAUTH_CLIENT_SECRET)" \
 		--dry-run=client -o yaml | kubectl apply -f -
 
-up: ## Deploy local charts
-	@echo "🚀 Deploying Resilience Agent Control Plane Locally"
-	helm upgrade --install $(CONTROL_RELEASE) $(CONTROL_CHART) \
-		-n $(NAMESPACE) \
-		$(HELM_CONTROL_ARGS) \
-		--create-namespace --force
-
-	@echo "🚀 Deploying Resilience Agent Locally"
+up: ## Deploy mock control plane and resilience agent
+	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	@echo "🚀 Deploying mock control plane"
+	kubectl apply -n $(NAMESPACE) -f ./mockserver/deployment.yaml
+	@echo "🚀 Deploying resilience agent"
 	helm upgrade --install $(AGENT_RELEASE) $(AGENT_CHART) \
 		-n $(NAMESPACE) \
 		$(HELM_AGENT_ARGS) \
 		--force
 
-down: ## Remove all the deployments
-	helm uninstall -n $(NAMESPACE) $(AGENT_RELEASE) $(CONTROL_RELEASE)
+down: ## Remove mock control plane and resilience agent
+	helm uninstall -n $(NAMESPACE) $(AGENT_RELEASE)
+	kubectl delete -n $(NAMESPACE) -f ./mockserver/deployment.yaml --ignore-not-found
 
 forward: ## Port forward control plane to localhost
-	kubectl port-forward svc/$(CONTROL_RELEASE) 8000:8000 -n $(NAMESPACE)
+	kubectl port-forward svc/controlplane 8000:8000 -n $(NAMESPACE)
 
 logs: ## Log stream of agent
 	kubectl logs -f $$(kubectl get pod -n $(NAMESPACE) -l app.kubernetes.io/name=$(AGENT_RELEASE) -o jsonpath='{.items[0].metadata.name}') -n $(NAMESPACE)
 
-logs-fluentbit: ## Log stream of fluentbit
-	kubectl logs -f $$(kubectl get pod -n $(NAMESPACE) -l app.kubernetes.io/name=$(AGENT_RELEASE) -o jsonpath='{.items[0].metadata.name}') -c fluent-bit-sidecar -n $(NAMESPACE)
-
-
-nginx-build: ## Build nginx with hpa
-	@echo "🐳 Building nginx container"
-	docker build -f ./docker/NginxDockerfile -t resilops-nginx:local .
+examples-up: ## Deploy example workloads
+	@eval $(minikube docker-env)
+	@echo "🐳 Building nginx example image"
+	docker build -f ./docker/nginx-example.Dockerfile -t resilops-nginx:local .
 	minikube image load resilops-nginx:local
-
-nginx-up: ## Deploy nginx with hpa
-	@echo "🐳 Deploying nginx container"
 	kubectl apply -f ./examples/nginx-hpa.yaml -n nginx
-
-nginx-down: ## Delete nginx deployment
-	kubectl delete -f ./examples/nginx-hpa.yaml
-
-http-up: ## Deploy http echo with hpa
 	kubectl apply -f ./examples/http-echo.yaml -n http-echo
 
-http-down: ## Delete http echo deployment
+examples-down: ## Delete example workloads
 	kubectl delete -f ./examples/http-echo.yaml
+	kubectl delete -f ./examples/nginx-hpa.yaml

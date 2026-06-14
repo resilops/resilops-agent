@@ -60,21 +60,6 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Environment variables from secrets
-*/}}
-{{- define "resilienceAgent.envFromSecrets" -}}
-{{- if .Values.secrets }}
-{{- range $key, $_ := .Values.secrets }}
-- name: {{ $key | upper | replace "-" "_" }}
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "resilienceAgent.name" $ }}-secret
-      key: {{ $key }}
-{{- end }}
-{{- end }}
-{{- end }}
-
-{{/*
 Environment variables from existing secrets (main container)
 */}}
 {{- define "resilienceAgent.envFromExistingSecrets" -}}

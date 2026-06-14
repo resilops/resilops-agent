@@ -1,0 +1,165 @@
+# Source: app/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: controlplane-sa
+  namespace: resilops
+  labels:
+    helm.sh/chart: app-0.1.0
+    app.kubernetes.io/name: controlplane
+    app.kubernetes.io/instance: controlplane
+    app.kubernetes.io/version: "0.0.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: app/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: controlplane-configmap
+  namespace: resilops
+data:
+  DEBUG: "false"
+  ENV: "local"
+---
+# Source: app/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: controlplane
+  namespace: resilops
+  labels:
+    helm.sh/chart: app-0.1.0
+    app.kubernetes.io/name: controlplane
+    app.kubernetes.io/instance: controlplane
+    app.kubernetes.io/version: "0.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: controlplane
+    app.kubernetes.io/instance: controlplane
+---
+# Source: app/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controlplane
+  namespace: resilops
+  labels:
+    helm.sh/chart: app-0.1.0
+    app.kubernetes.io/name: controlplane
+    app.kubernetes.io/instance: controlplane
+    app.kubernetes.io/version: "0.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: controlplane
+      app.kubernetes.io/instance: controlplane
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: app-0.1.0
+        app.kubernetes.io/name: controlplane
+        app.kubernetes.io/instance: controlplane
+        app.kubernetes.io/version: "0.0.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: controlplane-sa
+
+      containers:
+        - name: controlplane
+          image: "resilience-agent-cp:local"
+          imagePullPolicy: IfNotPresent
+          command:
+            - uvicorn
+            - server.app:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+
+          env:
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: controlplane-configmap
+                  key: DEBUG
+            - name: ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: controlplane-configmap
+                  key: ENV
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/health/live
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/health/ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              cpu: 750m
+              memory: 1Gi
+            requests:
+              cpu: 300m
+              memory: 512Mi
+      volumes:
+---
+# Source: app/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: controlplane
+  namespace: resilops
+  labels:
+    helm.sh/chart: app-0.1.0
+    app.kubernetes.io/name: controlplane
+    app.kubernetes.io/instance: controlplane
+    app.kubernetes.io/version: "0.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: controlplane
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
