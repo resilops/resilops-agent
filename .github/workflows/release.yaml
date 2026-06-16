@@ -18,6 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   REGISTRY: ghcr.io
   CHART_DIR: ./helm/agent
   IMAGE_NAME: resilience-agent
@@ -83,7 +84,6 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.image_repo }}:${{ steps.meta.outputs.version }}
-            ${{ steps.meta.outputs.image_repo }}:${{ inputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

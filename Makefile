@@ -9,7 +9,7 @@ endif
 NAMESPACE ?= resilops
 AGENT_CHART ?= ./helm/agent
 AGENT_RELEASE ?= agent
-AGENT_CONFIG_VERSION ?= rf2nCIa95IY
+AGENT_CONFIG_VERSION ?= X4qECRYtmGc
 RBAC_NAMESPACES ?= nginx,http-echo
 SECRETS_NAME ?= resilops-agent-secrets
 
@@ -79,3 +79,6 @@ examples-up: ## Deploy example workloads
 examples-down: ## Delete example workloads
 	kubectl delete -f ./examples/http-echo.yaml
 	kubectl delete -f ./examples/nginx-hpa.yaml
+
+logs-fluentbit: ## Log stream of fluentbit
+	kubectl logs -f $$(kubectl get pod -n $(NAMESPACE) -l app.kubernetes.io/name=$(AGENT_RELEASE) -o jsonpath='{.items[0].metadata.name}') -c fluent-bit-sidecar -n $(NAMESPACE)

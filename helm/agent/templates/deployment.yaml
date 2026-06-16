@@ -76,8 +76,9 @@ spec:
           {{- end }}
           {{- if or .Values.sidecar.env (include "resilienceAgent.hasSidecarExistingSecrets" .) }}
           env:
-            {{- with .Values.sidecar.env }}
-            {{- toYaml . | nindent 12 }}
+            {{- range .Values.sidecar.env }}
+            - name: {{ .name }}
+              value: {{ tpl (.value | toString) $ | quote }}
             {{- end }}
             {{- include "resilienceAgent.sidecarEnvFromExistingSecrets" . | nindent 12 }}
           {{- end }}

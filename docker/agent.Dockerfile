@@ -3,8 +3,8 @@ FROM python:3.12-slim AS base
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV POETRY_VERSION=2.2.1
-ENV HOME /home
-ENV APP $HOME/src
+ENV HOME=/home
+ENV APP=$HOME/src
 
 RUN apt-get update && apt-get install -y procps
 
