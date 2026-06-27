@@ -41,11 +41,6 @@ jobs:
           set -euo pipefail
           tag="${{ inputs.tag }}"
 
-          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Tag must look like v1.2.3" >&2
-            exit 1
-          fi
-
           version="${tag#v}"
           image_repo="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
           chart_repo="oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts"
@@ -99,9 +94,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           mkdir -p dist
-
           helm package "$CHART_DIR" \
             --version "${{ steps.meta.outputs.version }}" \
             --app-version "${{ steps.meta.outputs.version }}" \
@@ -111,12 +104,5 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           chart_package="$(find dist -maxdepth 1 -type f -name '*.tgz' -print -quit)"
-
-          if [[ -z "$chart_package" ]]; then
-            echo "Chart package not found in dist/" >&2
-            exit 1
-          fi
-
           helm push "$chart_package" "${{ steps.meta.outputs.chart_repo }}"
