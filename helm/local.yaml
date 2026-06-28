@@ -1,0 +1,10 @@
+region:
+  name: local
+  endpoints:
+    local:
+      env: local
+      controlPlaneApiHost: http://host.minikube.internal:9000
+      authServiceHost: http://host.minikube.internal:8000
+      fluentBitRemoteHost: host.minikube.internal
+      fluentBitRemotePort: "9000"
+      fluentBitRemoteTls: "Off"
