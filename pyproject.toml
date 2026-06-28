@@ -33,13 +33,11 @@ pytest-asyncio = "^1.3.0"
 httpx = "^0.28.1"
 cachetools = "^7.0.5"
 cachetools-async = "^0.0.5"
+resilience-lib = { git = "https://github.com/resilops/resilience-lib.git", tag = "v1.0.0" }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
 pytest-cov = "^7.0.0"
-
-[tool.poetry.group.local.dependencies]
-resilience-lib = {path = "./local-libs/resilience-lib", develop = true}
 
 [tool.poetry.scripts]
 resilience-agent = "agent.entrypoint:run"
