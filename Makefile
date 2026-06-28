@@ -35,7 +35,7 @@ chart: ## Build local kubernetes charts
 build: lib ## Build local agent and mock control plane images for Minikube
 	@eval $(minikube docker-env)
 	@echo "🐳 Building local images"
-	docker build --no-cache -f ./docker/agent.Dockerfile --target local -t resilience-agent:local .
+	docker build --no-cache -f ./docker/agent.Dockerfile -t resilience-agent:local .
 	docker build --no-cache -f ./docker/mockserver.Dockerfile -t resilience-agent-cp:local .
 	minikube image load resilience-agent:local
 	minikube image load resilience-agent-cp:local

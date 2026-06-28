@@ -14,17 +14,4 @@ ADD ./pyproject.toml ./poetry.lock ./README.md $HOME
 WORKDIR $APP
 
 RUN pip install "poetry==${POETRY_VERSION}"
-RUN poetry install --without local
-
-
-# -------------------------------
-# Local stage (for development)
-# -------------------------------
-FROM base AS local
-
-ARG INSTALL_LOCAL=false
-ARG RESILIENCE_LIB_PATH
-
-COPY ./local-libs/resilience-lib /home/local-libs/resilience-lib
-
-RUN poetry install --with local
+RUN poetry install
