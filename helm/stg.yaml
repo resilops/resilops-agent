@@ -5,6 +5,4 @@ region:
       env: eu
       controlPlaneApiHost: https://runtime-stg.resilopshq.dev
       authServiceHost: https://auth-stg.resilopshq.dev
-      fluentBitRemoteHost: runtime-stg.resilopshq.eu
-      fluentBitRemotePort: "443"
-      fluentBitRemoteTls: "On"
+      fluentBitRemoteHost: runtime-stg.resilopshq.dev

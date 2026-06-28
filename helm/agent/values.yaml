@@ -150,7 +150,10 @@ file_config:
             Format                 json
             tls                    ${FLUENTBIT_REMOTE_TLS}
             Retry_Limit            20
+            Header                 User-Agent Resilops-Agent/1.0
+            Header                 Content-Type application/json
             oauth2.enable          true
+            oauth2.user_agent      Resilops-Agent/1.0
             oauth2.token_url       ${FLUENTBIT_OAUTH_TOKEN_URL}
             oauth2.client_id       ${FLUENTBIT_OAUTH_CLIENT_ID}
             oauth2.client_secret   ${FLUENTBIT_OAUTH_CLIENT_SECRET}
@@ -165,8 +168,11 @@ file_config:
             URI                    /api/v1/agent/metrics
             Format                 json
             tls                    ${FLUENTBIT_REMOTE_TLS}
+            Header                 User-Agent Resilops-Agent/1.0
+            Header                 Content-Type application/json
             Retry_Limit            10
             oauth2.enable          true
+            oauth2.user_agent      Resilops-Agent/1.0
             oauth2.token_url       ${FLUENTBIT_OAUTH_TOKEN_URL}
             oauth2.client_id       ${FLUENTBIT_OAUTH_CLIENT_ID}
             oauth2.client_secret   ${FLUENTBIT_OAUTH_CLIENT_SECRET}
@@ -240,7 +246,7 @@ sidecar:
   name: fluent-bit
   image:
     repository: fluent/fluent-bit
-    tag: "5.0"
+    tag: "5.0.8"
     pullPolicy: IfNotPresent
   env:
     - name: FLUENTBIT_REMOTE_HOST
