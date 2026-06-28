@@ -39,6 +39,9 @@ resilience-lib = { git = "https://github.com/resilops/resilience-lib.git", tag =
 pytest = "^9.0.2"
 pytest-cov = "^7.0.0"
 
+[tool.poetry.group.local.dependencies]
+resilience-lib = {path = "./local-libs/resilience-lib", develop = true}
+
 [tool.poetry.scripts]
 resilience-agent = "agent.entrypoint:run"
 
