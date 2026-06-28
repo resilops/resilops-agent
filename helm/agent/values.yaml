@@ -77,6 +77,7 @@ envVar:
     RESILOPS_AGENT_AUTH_SERVICE_HOST: '{{ (index .Values.region.endpoints .Values.region.name).authServiceHost }}'
     RESILOPS_AGENT_TARGET_NAMESPACES: '{{ join "," .Values.rbac.namespaced.namespaces }}'
     RESILOPS_AGENT_NAMESPACE: '{{ .Release.Namespace }}'
+    RESILOPS_AGENT_CONFIG_VERSION: ''
 
 existingSecret:
   name: resilops-agent-secrets
