@@ -9,7 +9,7 @@ AGENT_CLAIM_SET_ACK_PATH = "/api/v1/agent/scenario-claim-sets/{claim_set_id}/ack
 AGENT_SCENARIO_RUN_PATH = "/api/v1/agent/scenarios/{scenario_id}/runs/{run_id}"
 AGENT_CLUSTER_SNAPSHOT: str = "/api/v1/agent/snapshots/cluster"
 
-DISCOVERY_K8S_LEASE_NAME: str = "resilience-agent-snapshot-discovery-lease"
+DISCOVERY_K8S_LEASE_NAME: str = "resilops-agent-snapshot-discovery-lease"
 
 
 class AgentOAuthScopes(Enum):

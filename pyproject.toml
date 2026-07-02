@@ -40,7 +40,7 @@ pytest = "^9.0.2"
 pytest-cov = "^7.0.0"
 
 [tool.poetry.scripts]
-resilience-agent = "agent.entrypoint:run"
+resilops-agent = "agent.entrypoint:run"
 
 [tool.black]
 line-length = 88
@@ -76,6 +76,6 @@ show_missing = true
 skip_covered = true
 
 [tool.poetry.urls]
-homepage = "https://github.com/resilops/resilience-agent"
-documentation = "https://github.com/resilops/resilience-agent/tree/main/docs"
-bug-tracker = "https://github.com/resilops/resilience-agent/issues"
+homepage = "https://github.com/resilops/resilops-agent"
+documentation = "https://github.com/resilops/resilops-agent/tree/main/docs"
+bug-tracker = "https://github.com/resilops/resilops-agent/issues"

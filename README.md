@@ -1,6 +1,6 @@
 # Resilience Agent
 
-`resilience-agent` is the Kubernetes-side runtime for ResilOps resiliency
+`resilops-agent` is the Kubernetes-side runtime for ResilOps resiliency
 validation. It runs in a customer Kubernetes cluster, communicates with the
 ResilOps control plane, executes resiliency scenarios through `resilience-lib`,
 and emits structured event and metric telemetry.

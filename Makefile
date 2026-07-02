@@ -35,10 +35,10 @@ chart: ## Build local kubernetes charts
 build: lib ## Build local agent and mock control plane images for Minikube
 	@eval $(minikube docker-env)
 	@echo "🐳 Building local images"
-	docker build --no-cache -f ./docker/agent.Dockerfile -t resilience-agent:local .
-	docker build --no-cache -f ./docker/mockserver.Dockerfile -t resilience-agent-cp:local .
-	minikube image load resilience-agent:local
-	minikube image load resilience-agent-cp:local
+	docker build --no-cache -f ./docker/agent.Dockerfile -t resilops-agent:local .
+	docker build --no-cache -f ./docker/mockserver.Dockerfile -t resilops-agent-cp:local .
+	minikube image load resilops-agent:local
+	minikube image load resilops-agent-cp:local
 
 secrets: ## Create/update local agent secret from .env
 	@test -n "$(OAUTH_CLIENT_ID)" || (echo "OAUTH_CLIENT_ID is not set"; exit 1)

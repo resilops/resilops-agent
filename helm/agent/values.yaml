@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: ghcr.io/resilops/resilience-agent
+  repository: ghcr.io/resilops/resilops-agent
   pullPolicy: IfNotPresent
   tag: ""
 
@@ -26,7 +26,7 @@ livenessProbe:
     command:
       - sh
       - -c
-      - pgrep -f 'resilience-agent' || exit 1
+      - pgrep -f 'resilops-agent' || exit 1
   initialDelaySeconds: 10
   periodSeconds: 10
 
@@ -35,7 +35,7 @@ readinessProbe:
     command:
       - sh
       - -c
-      - pgrep -f 'resilience-agent' || exit 1
+      - pgrep -f 'resilops-agent' || exit 1
   initialDelaySeconds: 10
   periodSeconds: 10
 
@@ -290,7 +290,7 @@ sidecar:
 containerCommand:
   - poetry
   - run
-  - resilience-agent
+  - resilops-agent
 
 nodeSelector: {}
 tolerations: []

@@ -8,9 +8,9 @@ from agent.exceptions import ConfigError
 
 
 def _get_app_version() -> str:
-    """Version of the installed resilience-agent package."""
+    """Version of the installed resilops-agent package."""
     try:
-        app_version = version("resilience-agent")
+        app_version = version("resilops-agent")
     except PackageNotFoundError as exc:
         raise ConfigError("Application build does not have app version") from exc
 
@@ -97,5 +97,5 @@ class AgentConfig(BaseSettings):
 
     @property
     def app_version(self) -> str:
-        """Version of the installed resilience-agent package."""
+        """Version of the installed resilops-agent package."""
         return _APP_VERSION

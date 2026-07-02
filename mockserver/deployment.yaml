@@ -75,7 +75,7 @@ spec:
 
       containers:
         - name: controlplane
-          image: "resilience-agent-cp:local"
+          image: "resilops-agent-cp:local"
           imagePullPolicy: IfNotPresent
           command:
             - uvicorn
