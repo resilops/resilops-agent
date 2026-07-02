@@ -21,7 +21,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   REGISTRY: ghcr.io
   CHART_DIR: ./helm/agent
-  IMAGE_NAME: resilience-agent
+  IMAGE_NAME: resilops-agent
 
 jobs:
   release:
