@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          poetry install --no-interaction --no-root
+          poetry install --only main,test --no-interaction --no-root
 
       - name: Run CI tests
         shell: bash

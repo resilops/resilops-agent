@@ -1,47 +1,90 @@
-# Resilience Agent
+# ResilOps Agent
 
-`resilops-agent` is the Kubernetes-side runtime for ResilOps resiliency
-validation. It runs in a customer Kubernetes cluster, communicates with the
-ResilOps control plane, executes resiliency scenarios through `resilience-lib`,
-and emits structured event and metric telemetry.
+`resilops-agent` is the Kubernetes-side runtime for ResilOps resilience
+validation. It runs inside a customer cluster, receives scenario work from the
+ResilOps control plane, executes that work through
+[`resilience-lib`](../resilience-lib), and emits structured telemetry back to
+the platform.
 
-This repository is proprietary software owned by ResilOps.
+This repository is public so the execution model, RBAC scope, and cluster-side
+behavior are inspectable. Issues and pull requests are welcome.
 
-## What the agent does
+## What This Agent Does
 
-- Sends periodic heartbeats to the control plane.
-- Polls for queued resiliency scenario claims.
-- Fetches and executes scenario runs through `resilience-lib`.
-- Captures namespace discovery snapshots.
-- Uses Kubernetes `Lease` resources for leader election.
-- Forwards telemetry through a Fluent Bit sidecar.
+The agent is responsible for the cluster-local parts of a resilience validation
+run:
 
-## Repository roles
+- heartbeats to the control plane
+- polling for queued resilience scenario claims
+- fetching and executing scenario runs through `resilience-lib`
+- namespace discovery snapshots
+- leader election through Kubernetes `Lease` resources
+- forwarding event and metric telemetry through a Fluent Bit sidecar
 
-- `src/agent/`: the real application.
-- `helm/agent/`: the publishable Helm chart for the agent.
-- `mockserver/`: supporting mock control plane for local development only.
-- `examples/`: supporting demo workloads and scenario payloads only.
+In practice, this repo is the delivery and runtime layer around
+`resilience-lib`. The library defines how scenarios execute. This agent handles
+how that runtime is deployed, configured, authenticated, and operated inside a
+cluster.
 
-## Release workflow
+## How This Fits In The ResilOps Stack
 
-The intended release flow is:
+The public ResilOps repositories are split by responsibility:
 
-1. Create a Git tag and GitHub release.
-2. Run the chart release workflow.
-3. Publish the Helm chart to GHCR as an OCI artifact.
-4. Customers install the published chart.
+- `resilience-lib`: the scenario runtime and validation engine
+- `resilops-agent`: the in-cluster worker that executes that runtime
+- `resilience-web`: the web application and control-plane-facing UI
 
-The chart release workflow packages `helm/agent` and publishes it to:
+That separation is intentional. It keeps the validation logic, the cluster
+runtime, and the product surface independently inspectable and easier to
+contribute to.
+
+## How This Differs From Chaos Engineering
+
+This project uses some of the same mechanisms as chaos engineering, but it is
+not the same discipline.
+
+`resilops-agent` exists to run controlled, scenario-driven resilience
+validation. The goal is not broad fault exploration or random disruption. The
+goal is to gather repeatable evidence that a workload satisfies recovery and
+availability expectations with a bounded blast radius.
+
+That distinction shows up in a few ways:
+
+- runs are driven by explicit scenarios rather than open-ended experiments
+- execution is gated by guardrails implemented in `resilience-lib`
+- rollback and recovery verification are part of the expected workflow
+- results are meant to support release readiness, drift detection, and
+  operational confidence
+- cluster permissions are scoped to the specific validation actions the agent
+  must perform
+
+If your goal is unrestricted production fault injection, large-scale game days,
+or exploratory chaos programs, that is adjacent work but not the focus of this
+repository.
+
+## Repository Layout
+
+- `src/agent/`: application code
+- `helm/agent/`: Helm chart used to deploy the agent
+- `mockserver/`: mock control plane for local development
+- `examples/`: example workloads and scenario payloads
+- `docker/`: local image build inputs
+
+## Requirements
+
+- Python `>=3.12,<4.0`
+- Poetry
+- a Kubernetes cluster for runtime testing
+- Helm for chart rendering and installation
+- access to a checkout of `../resilience-lib` for local development workflows
+
+## Installation And Deployment
+
+The chart is published as an OCI artifact:
 
 ```text
 oci://ghcr.io/resilops/charts/agent
 ```
-
-## Customer chart usage
-
-The published agent chart is publicly readable from GHCR. Customers install it
-directly from the OCI registry.
 
 Example install:
 
@@ -65,12 +108,12 @@ helm upgrade agent \
   --namespace resilops
 ```
 
-Customers still need to provide:
+Cluster operators still need to provide:
 
-- OAuth client credentials in a Kubernetes secret.
-- The control plane URL for their region.
-- The auth service URL for their region.
-- The target namespaces the agent is allowed to operate in.
+- OAuth client credentials in a Kubernetes secret
+- the control plane URL for the target region
+- the auth service URL for the target region
+- the target namespaces the agent is allowed to operate in
 
 ## Configuration
 
@@ -101,9 +144,12 @@ Logging settings:
 - `LOG_MAX_MB` default `50`
 - `LOG_BACKUP_COUNT` default `3`
 
-## Kubernetes permissions
+See `helm/agent/values.yaml` for chart defaults, region mappings, sidecar
+configuration, and RBAC settings.
 
-The agent chart configures RBAC for:
+## Kubernetes Permissions
+
+The Helm chart configures RBAC for:
 
 - pods, including delete and patch operations
 - pod evictions
@@ -117,18 +163,18 @@ The agent chart configures RBAC for:
 - pod metrics from `metrics.k8s.io`
 - `coordination.k8s.io` `leases` in the agent namespace
 
-## Local development
+The intention is not blanket cluster administration. The permissions are shaped
+around the specific disruption, observation, and recovery checks required by
+the current validation workflows.
 
-Local development support in this repository exists for testing the agent, not
-for customer deployment.
+## Local Development
 
-Supporting components:
-
-- `mockserver/deployment.yaml`: mock control plane for local testing
-- `examples/`: demo workloads and scenario payloads
+This repository includes a local workflow for testing the agent against a mock
+control plane.
 
 Useful commands:
 
+- `make lib`
 - `make build`
 - `make secrets`
 - `make up`
@@ -137,9 +183,40 @@ Useful commands:
 - `make forward`
 - `make examples-up`
 - `make examples-down`
+- `make tests`
 
-## Related files
+Supporting components:
+
+- `mockserver/deployment.yaml`: mock control plane for local testing
+- `examples/`: demo workloads and scenario payloads
+
+## Contributing
+
+Contributions are welcome, especially in areas such as:
+
+- Kubernetes runtime hardening
+- Helm chart improvements
+- RBAC minimization and review
+- telemetry and operability
+- local development ergonomics
+- documentation and examples
+
+Before opening a larger pull request, start with an issue that explains the
+problem, the proposed change, and any operational tradeoffs. That keeps changes
+aligned across `resilops-agent`, `resilience-lib`, and the web/control-plane
+surface.
+
+When contributing:
+
+- keep changes scoped to the agent or chart unless a cross-repo change is
+  clearly required
+- call out RBAC changes explicitly
+- document behavior changes that affect operators or cluster permissions
+- include tests where the change touches runtime behavior
+
+## Related Files
 
 - `helm/agent/values.yaml`: chart defaults and region endpoint mappings
-- `.github/workflows/release-chart.yml`: manual chart publication workflow
-- `LICENSE`: proprietary license terms
+- `.github/workflows/release.yaml`: chart publication workflow
+- `DISTRIBUTION.md`: current packaging and delivery notes
+- `LICENSE`: repository license terms

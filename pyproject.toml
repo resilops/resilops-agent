@@ -28,15 +28,14 @@ python = "^3.12"
 requests = "^2.34.2"
 pydantic-settings = "^2.14.2"
 python-json-logger = "^4.1.0"
-pytest = "^9.1.1"
-pytest-asyncio = "^1.4.0"
 httpx = "^0.28.1"
 cachetools = "^7.1.4"
 cachetools-async = "^0.0.5"
 resilience-lib = {git = "https://github.com/resilops/resilience-lib.git", rev = "v1.0.0"}
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^9.0.2"
+[tool.poetry.group.test.dependencies]
+pytest = "^9.1.1"
+pytest-asyncio = "^1.4.0"
 pytest-cov = "^7.0.0"
 
 [tool.poetry.scripts]
