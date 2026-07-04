@@ -74,6 +74,15 @@ branch = true
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
+omit = ["*/tests/*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["src/agent"]
+python_files = ["*/tests/test_*.py"]
+asyncio_mode = "auto"
+norecursedirs = ["__pycache__"]
+addopts = "--cov=agent --cov-report=term-missing --cov-report=html:./test_reports/html --cov-fail-under=80"
 
 [tool.poetry.urls]
 homepage = "https://github.com/resilops/resilops-agent"

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help lib chart build secrets up down forward logs examples-up examples-down
+.PHONY: help lib chart build secrets up down forward logs examples-up examples-down tests cicd-test
 
 ifneq (,$(wildcard .env))
 include .env
@@ -82,3 +82,6 @@ examples-down: ## Delete example workloads
 
 logs-fluentbit: ## Log stream of fluentbit
 	kubectl logs -f $$(kubectl get pod -n $(NAMESPACE) -l app.kubernetes.io/name=$(AGENT_RELEASE) -o jsonpath='{.items[0].metadata.name}') -c fluent-bit-sidecar -n $(NAMESPACE)
+
+tests: ## Run unit tests with coverage gate
+	poetry run pytest
