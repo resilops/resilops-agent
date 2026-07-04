@@ -46,7 +46,7 @@ not the same discipline.
 `resilops-agent` exists to run controlled, scenario-driven resilience
 validation. The goal is not broad fault exploration or random disruption. The
 goal is to gather repeatable evidence that a workload satisfies recovery and
-availability expectations with a bounded blast radius.
+reliability expectations with a bounded blast radius.
 
 That distinction shows up in a few ways:
 
