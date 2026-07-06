@@ -8,8 +8,9 @@ endif
 
 NAMESPACE ?= resilops
 AGENT_CHART ?= ./helm/agent
+AGENT_VALUES ?= ./helm/local.yaml
 AGENT_RELEASE ?= agent
-AGENT_CONFIG_VERSION ?= X4qECRYtmGc
+AGENT_CONFIG_VERSION ?= hT8ahyVif9Q
 RBAC_NAMESPACES ?= nginx,http-echo
 SECRETS_NAME ?= resilops-agent-secrets
 
@@ -30,6 +31,7 @@ lib: ## Install resilience-lib
 chart: ## Build local kubernetes charts
 	helm template $(AGENT_RELEASE) $(AGENT_CHART) \
 		-n $(NAMESPACE) \
+		-f $(AGENT_VALUES) \
 		$(HELM_AGENT_ARGS)
 
 build: lib ## Build local agent and mock control plane images for Minikube
@@ -55,6 +57,7 @@ up: ## Deploy mock control plane and resilience agent
 	@echo "🚀 Deploying resilience agent"
 	helm upgrade --install $(AGENT_RELEASE) $(AGENT_CHART) \
 		-n $(NAMESPACE) \
+		-f $(AGENT_VALUES) \
 		$(HELM_AGENT_ARGS) \
 		--force
 
@@ -73,12 +76,12 @@ examples-up: ## Deploy example workloads
 	@echo "🐳 Building nginx example image"
 	docker build -f ./docker/nginx-example.Dockerfile -t resilops-nginx:local .
 	minikube image load resilops-nginx:local
-	kubectl apply -f ./examples/nginx-hpa.yaml -n nginx
-	kubectl apply -f ./examples/http-echo.yaml -n http-echo
+	kubectl apply -f ./examples/workloads/nginx-hpa.yaml -n nginx
+	kubectl apply -f ./examples/workloads/http-echo.yaml -n http-echo
 
 examples-down: ## Delete example workloads
-	kubectl delete -f ./examples/http-echo.yaml
-	kubectl delete -f ./examples/nginx-hpa.yaml
+	kubectl delete -f ./examples/workloads/http-echo.yaml
+	kubectl delete -f ./examples/workloads/nginx-hpa.yaml
 
 logs-fluentbit: ## Log stream of fluentbit
 	kubectl logs -f $$(kubectl get pod -n $(NAMESPACE) -l app.kubernetes.io/name=$(AGENT_RELEASE) -o jsonpath='{.items[0].metadata.name}') -c fluent-bit-sidecar -n $(NAMESPACE)
