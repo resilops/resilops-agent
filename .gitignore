@@ -34,6 +34,8 @@ ckan/public/base/less/custom.less
 # nosetest coverage output
 .coverage
 htmlcov/*
+coverage.xml
+test_reports
 
 # Bot
 /logs
@@ -73,3 +75,4 @@ terraform.rc
 secrets.yaml
 gpg_private.key
 local-libs
+.coverage
