@@ -1,5 +1,7 @@
 # ResilOps Agent
 
+[![Tests](https://github.com/resilops/resilops-agent/actions/workflows/test.yaml/badge.svg)](https://github.com/resilops/resilops-agent/actions/workflows/test.yaml)
+[![codecov](https://codecov.io/gh/resilops/resilops-agent/graph/badge.svg)](https://codecov.io/gh/resilops/resilops-agent)
 [![Release Agent](https://github.com/resilops/resilops-agent/actions/workflows/release.yaml/badge.svg)](https://github.com/resilops/resilops-agent/actions/workflows/release.yaml)
 [![Release](https://img.shields.io/github/v/release/resilops/resilops-agent)](https://github.com/resilops/resilops-agent/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/resilops/resilops-agent/blob/main/LICENSE)
