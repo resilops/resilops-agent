@@ -81,7 +81,7 @@ testpaths = ["src/agent"]
 python_files = ["*/tests/test_*.py"]
 asyncio_mode = "auto"
 norecursedirs = ["__pycache__"]
-addopts = "--cov=agent --cov-report=term-missing --cov-report=html:./test_reports/html --cov-fail-under=80"
+addopts = "--cov=agent --cov-report=term-missing --cov-report=html:./test_reports/html --cov-report=xml:coverage.xml --cov-fail-under=80"
 
 [tool.poetry.urls]
 homepage = "https://github.com/resilops/resilops-agent"
