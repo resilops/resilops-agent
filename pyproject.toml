@@ -7,7 +7,7 @@ name = "resilops-agent"
 version = "1.0.0"
 description = "resilopshq.com agent for validating Kubernetes resiliency and SLA criteria."
 authors = ["Swaroop Shubhakrishna Bhat <swaroopbhatk@gmail.com>"]
-license = "Proprietary"
+license = "Apache-2.0"
 readme = "README.md"
 packages = [{ include = "agent", from = "src" }]
 keywords = [

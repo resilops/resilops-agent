@@ -1,13 +1,20 @@
 # ResilOps Agent
 
+[![Release Agent](https://github.com/resilops/resilops-agent/actions/workflows/release.yaml/badge.svg)](https://github.com/resilops/resilops-agent/actions/workflows/release.yaml)
+[![Release](https://img.shields.io/github/v/release/resilops/resilops-agent)](https://github.com/resilops/resilops-agent/releases)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/resilops/resilops-agent/blob/main/LICENSE)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://github.com/resilops/resilops-agent/blob/main/pyproject.toml)
+
 `resilops-agent` is the Kubernetes-side runtime for ResilOps resilience
 validation. It runs inside a customer cluster, receives scenario work from the
 ResilOps control plane, executes that work through
 [`resilience-lib`](../resilience-lib), and emits structured telemetry back to
 the platform.
 
-This repository is public so the execution model, RBAC scope, and cluster-side
-behavior are inspectable. Issues and pull requests are welcome.
+This repository is public because the execution model, RBAC scope, and cluster-side
+behavior should be inspectable. Contributions are welcome from engineers working
+on Kubernetes reliability, platform engineering, SRE, and release validation
+workflows.
 
 ## What This Agent Does
 
@@ -220,3 +227,7 @@ When contributing:
 - `.github/workflows/release.yaml`: chart publication workflow
 - `DISTRIBUTION.md`: current packaging and delivery notes
 - `LICENSE`: repository license terms
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
